@@ -3020,13 +3020,13 @@ module GFS_typedefs
                                                              !< nstf_name(4) : zsea1 in mm
                                                              !< nstf_name(5) : zsea2 in mm
 !--- fractional grid
-    logical              :: frac_grid       = .false.         !< flag for fractional grid
-    logical              :: frac_grid_off   = .true.          !< flag for using fractional grid
-    logical              :: ignore_lake     = .true.          !< flag for ignoring lakes
-    real(kind=kind_phys) :: min_lakeice     = 0.15d0          !< minimum lake ice value
-    real(kind=kind_phys) :: min_seaice      = 1.0d-11         !< minimum sea  ice value
-    real(kind=kind_phys) :: min_lake_height = 250.0           !< minimum lake height value
-    real(kind=kind_phys) :: rho_h2o         = rhowater        !< fresh water density
+    logical              :: frac_grid       = .false.        !< flag for fractional grid
+    logical              :: frac_grid_off   = .false.        !< flag for using fractional grid
+    logical              :: ignore_lake     = .false.        !< flag for ignoring lakes
+    real(kind=kind_phys) :: min_lakeice     = 0.15d0         !< minimum lake ice value
+    real(kind=kind_phys) :: min_seaice      = 1.0d-11        !< minimum sea  ice value
+    real(kind=kind_phys) :: min_lake_height = 250.0          !< minimum lake height value
+    real(kind=kind_phys) :: rho_h2o         = rhowater       !< fresh water density
 
 !--- surface layer z0 scheme
     integer              :: sfc_z0_type    = 0               !< surface roughness options over ocean
