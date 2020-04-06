@@ -541,6 +541,41 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+[dust_in]
+  standard_name = fengsha_dust_input
+  long_name = fengsha dust input
+  units = various
+  dimensions = (horizontal_dimension,5)
+  type = real
+  kind = kind_phys
+[emi_in]
+  standard_name = anthropogenic_background_input
+  long_name = anthropogenic background input
+  units = various
+  dimensions = (horizontal_dimension,10)
+  type = real
+  kind = kind_phys
+[emi2_in]
+  standard_name = anthropogenic_background_3d_input
+  long_name = anthropogenic background 3d input
+  units = various
+  dimensions = (horizontal_dimension,vertical_dimension,3)
+  type = real
+  kind = kind_phys
+[fire_GBBEPx]
+  standard_name = emission_fire_GBBEPx
+  long_name = emission fire GBBEPx
+  units = various
+  dimensions = (horizontal_dimension,5)
+  type = real
+  kind = kind_phys
+[fire_MODIS]
+  standard_name = emission_fire_MODIS
+  long_name = emission fire MODIS
+  units = various
+  dimensions = (horizontal_dimension,13)
+  type = real
+  kind = kind_phys
 [sncovr]
   standard_name = surface_snow_area_fraction_over_land
   long_name = surface snow area fraction
@@ -3580,6 +3615,126 @@
   units = index
   dimensions = ()
   type = integer
+[ntso2]
+  standard_name = index_for_so2
+  long_name = tracer index for so2
+  units = index
+  dimensions = ()
+  type = integer
+[ntsulf]
+  standard_name = index_for_sulf
+  long_name = tracer index for sulf
+  units = index
+  dimensions = ()
+  type = integer
+[ntDMS]
+  standard_name = index_for_DMS
+  long_name = tracer index for DMS
+  units = index
+  dimensions = ()
+  type = integer
+[ntmsa]
+  standard_name = index_for_msa
+  long_name = tracer index for msa
+  units = index
+  dimensions = ()
+  type = integer
+[ntpp25]
+  standard_name = index_for_pp25
+  long_name = tracer index for pp25
+  units = index
+  dimensions = ()
+  type = integer
+[ntbc1]
+  standard_name = index_for_bc1
+  long_name = tracer index for bc1
+  units = index
+  dimensions = ()
+  type = integer
+[ntbc2]
+  standard_name = index_for_bc2
+  long_name = tracer index for bc2
+  units = index
+  dimensions = ()
+  type = integer
+[ntoc1]
+  standard_name = index_for_oc1
+  long_name = tracer index for oc1
+  units = index
+  dimensions = ()
+  type = integer
+[ntoc2]
+  standard_name = index_for_oc2
+  long_name = tracer index for oc2
+  units = index
+  dimensions = ()
+  type = integer
+[ntdust1]
+  standard_name = index_for_dust_1
+  long_name = tracer index for dust 1
+  units = index
+  dimensions = ()
+  type = integer
+[ntdust2]
+  standard_name = index_for_dust_2
+  long_name = tracer index for dust 2
+  units = index
+  dimensions = ()
+  type = integer
+[ntdust3]
+  standard_name = index_for_dust_3
+  long_name = tracer index for dust 3
+  units = index
+  dimensions = ()
+  type = integer
+[ntdust4]
+  standard_name = index_for_dust_4
+  long_name = tracer index for dust 4
+  units = index
+  dimensions = ()
+  type = integer
+[ntdust5]
+  standard_name = index_for_dust_5
+  long_name = tracer index for dust 5
+  units = index
+  dimensions = ()
+  type = integer
+[ntss1]
+  standard_name = index_for_sea_salt_1
+  long_name = tracer index for sea salt 1
+  units = index
+  dimensions = ()
+  type = integer
+[ntss2]
+  standard_name = index_for_sea_salt_2
+  long_name = tracer index for sea salt 2
+  units = index
+  dimensions = ()
+  type = integer
+[ntss3]
+  standard_name = index_for_sea_salt_3
+  long_name = tracer index for sea salt 3
+  units = index
+  dimensions = ()
+  type = integer
+[ntss4]
+  standard_name = index_for_sea_salt_4
+  long_name = tracer index for sea salt 4
+  units = index
+  dimensions = ()
+  type = integer
+[ntss5]
+  standard_name = index_for_sea_salt_5
+  long_name = tracer index for sea salt 5
+  units = index
+  dimensions = ()
+  type = integer
+[ntpp10]
+  standard_name = index_for_pp10
+  long_name = tracer index for pp10
+  units = index
+  dimensions = ()
+  type = integer
 [ntchm]
   standard_name = number_of_chemical_tracers
   long_name = number of chemical tracers
@@ -5919,6 +6074,13 @@
   long_name = total cloud condensate mixing ratio (except water vapor) updated by physics
   units = kg kg-1
   dimensions = (horizontal_dimension,vertical_dimension)
+  type = real
+  kind = kind_phys
+[buffer_ebu]
+  standard_name = chem_buffer_ebu
+  long_name = chemistry buffer of ebu
+  units = various
+  dimensions = (horizontal_dimension,vertical_dimension_plus_one,7)
   type = real
   kind = kind_phys
 [adjsfculw_ocean]

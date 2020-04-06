@@ -237,6 +237,11 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: fice   (:)   => null()  !< ice fraction over open water grid
 !   real (kind=kind_phys), pointer :: hprim  (:)   => null()  !< topographic standard deviation in m
     real (kind=kind_phys), pointer :: hprime (:,:) => null()  !< orographic metrics
+    real (kind=kind_phys), pointer :: dust_in(:,:) => null()  !< fengsha dust input
+    real (kind=kind_phys), pointer :: emi_in (:,:) => null()  !< anthropogenic background input
+    real (kind=kind_phys), pointer :: emi2_in(:,:,:) => null()!< anthropogenic background 3D input
+    real (kind=kind_phys), pointer :: fire_MODIS (:,:) => null()  !< anthropogenic fire MODIS input
+    real (kind=kind_phys), pointer :: fire_GBBEPx(:,:) => null()  !< anthropogenic fire GBBEPx input
 
 !--- In (radiation only)
     real (kind=kind_phys), pointer :: sncovr (:)   => null()  !< snow cover in fraction
@@ -1008,6 +1013,26 @@ module GFS_typedefs
     integer              :: ntia            !< tracer index for ice friendly aerosol
     integer              :: ntchm           !< number of chemical tracers
     integer              :: ntchs           !< tracer index for first chemical tracer
+    integer              :: ntso2           !< tracer index for so2
+    integer              :: ntsulf          !< tracer index for sulf
+    integer              :: ntdms           !< tracer index for DMS
+    integer              :: ntmsa           !< tracer index for msa
+    integer              :: ntpp25          !< tracer index for pp25
+    integer              :: ntbc1           !< tracer index for bc1
+    integer              :: ntbc2           !< tracer index for bc2
+    integer              :: ntoc1           !< tracer index for oc1
+    integer              :: ntoc2           !< tracer index for oc2
+    integer              :: ntdust1         !< tracer index for dust 1
+    integer              :: ntdust2         !< tracer index for dust 2
+    integer              :: ntdust3         !< tracer index for dust 3
+    integer              :: ntdust4         !< tracer index for dust 4
+    integer              :: ntdust5         !< tracer index for dust 5
+    integer              :: ntss1           !< tracer index for sea salt 1
+    integer              :: ntss2           !< tracer index for sea salt 2
+    integer              :: ntss3           !< tracer index for sea salt 3
+    integer              :: ntss4           !< tracer index for sea salt 4
+    integer              :: ntss5           !< tracer index for sea salt 5
+    integer              :: ntpp10          !< tracer index for pp10
     logical, pointer     :: ntdiag(:) => null() !< array to control diagnostics for chemical tracers
     real(kind=kind_phys), pointer :: fscav(:)  => null() !< array of aerosol scavenging coefficients
 
@@ -1906,6 +1931,9 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: f_rimef    (:,:)   => null()  !<
     real (kind=kind_phys), pointer :: cwm        (:,:)   => null()  !<
 
+    !-- chemistry coupling
+    real (kind=kind_phys), pointer :: buffer_ebu (:,:,:)   => null()  !<
+
 
     contains
       procedure :: create      => interstitial_create     !<   allocate array data
@@ -2065,6 +2093,11 @@ module GFS_typedefs
     allocate (Sfcprop%fice     (IM))
 !   allocate (Sfcprop%hprim    (IM))
     allocate (Sfcprop%hprime   (IM,Model%nmtvr))
+    allocate (Sfcprop%dust_in  (IM,5))
+    allocate (Sfcprop%emi_in   (IM,10))
+    allocate (Sfcprop%emi2_in  (IM,64,3))
+    allocate (Sfcprop%fire_MODIS (IM,13))
+    allocate (Sfcprop%fire_GBBEPx(IM,5))
 
     Sfcprop%slmsk     = clear_val
     Sfcprop%oceanfrac = clear_val
@@ -2081,6 +2114,11 @@ module GFS_typedefs
     Sfcprop%fice      = clear_val
 !   Sfcprop%hprim     = clear_val
     Sfcprop%hprime    = clear_val
+    Sfcprop%dust_in   = clear_val
+    Sfcprop%emi_in    = clear_val
+    Sfcprop%emi2_in   = clear_val
+    Sfcprop%fire_MODIS  = clear_val
+    Sfcprop%fire_GBBEPx = clear_val
 
 !--- In (radiation only)
     allocate (Sfcprop%sncovr (IM))
@@ -2725,7 +2763,7 @@ module GFS_typedefs
     logical              :: cplflx         = .false.         !< default no cplflx collection
     logical              :: cplwav         = .false.         !< default no cplwav collection
     logical              :: cplwav2atm     = .false.         !< default no cplwav2atm coupling
-    logical              :: cplchm         = .false.         !< default no cplchm collection
+    logical              :: cplchm         = .true.          !< default no cplchm collection
 
 !--- integrated dynamics through earth's atmosphere
     logical              :: lsidea         = .false.
@@ -2865,7 +2903,7 @@ module GFS_typedefs
     logical              :: ras            = .false.                  !< flag for ras convection scheme
     logical              :: flipv          = .true.                   !< flag for vertical direction flip (ras)
                                                                       !< .true. implies surface at k=1
-    logical              :: trans_trac     = .false.                  !< flag for convective transport of tracers (RAS, CS, or SAMF)
+    logical              :: trans_trac     = .true.                   !< flag for convective transport of tracers (RAS, CS, or SAMF)
     logical              :: old_monin      = .false.                  !< flag for diff monin schemes
     logical              :: cnvgwd         = .false.                  !< flag for conv gravity wave drag
     integer              :: gwd_opt        =  1                       !< flag for configuring gwd scheme
@@ -3020,13 +3058,13 @@ module GFS_typedefs
                                                              !< nstf_name(4) : zsea1 in mm
                                                              !< nstf_name(5) : zsea2 in mm
 !--- fractional grid
-    logical              :: frac_grid       = .false.        !< flag for fractional grid
-    logical              :: frac_grid_off   = .false.        !< flag for using fractional grid
-    logical              :: ignore_lake     = .false.        !< flag for ignoring lakes
-    real(kind=kind_phys) :: min_lakeice     = 0.15d0         !< minimum lake ice value
-    real(kind=kind_phys) :: min_seaice      = 1.0d-11        !< minimum sea  ice value
-    real(kind=kind_phys) :: min_lake_height = 250.0          !< minimum lake height value
-    real(kind=kind_phys) :: rho_h2o         = rhowater       !< fresh water density
+    logical              :: frac_grid       = .false.         !< flag for fractional grid
+    logical              :: frac_grid_off   = .true.          !< flag for using fractional grid
+    logical              :: ignore_lake     = .true.          !< flag for ignoring lakes
+    real(kind=kind_phys) :: min_lakeice     = 0.15d0          !< minimum lake ice value
+    real(kind=kind_phys) :: min_seaice      = 1.0d-11         !< minimum sea  ice value
+    real(kind=kind_phys) :: min_lake_height = 250.0           !< minimum lake height value
+    real(kind=kind_phys) :: rho_h2o         = rhowater        !< fresh water density
 
 !--- surface layer z0 scheme
     integer              :: sfc_z0_type    = 0               !< surface roughness options over ocean
@@ -3700,6 +3738,26 @@ module GFS_typedefs
     Model%ntia             = get_tracer_index(Model%tracer_names, 'ice_aero',   Model%me, Model%master, Model%debug)
     Model%ntchm            = 0
     Model%ntchs            = get_tracer_index(Model%tracer_names, 'so2',        Model%me, Model%master, Model%debug)
+    Model%ntso2            = get_tracer_index(Model%tracer_names, 'so2',        Model%me, Model%master, Model%debug)
+    Model%ntsulf           = get_tracer_index(Model%tracer_names, 'sulf',       Model%me, Model%master, Model%debug)
+    Model%ntdms            = get_tracer_index(Model%tracer_names, 'dms',        Model%me, Model%master, Model%debug)
+    Model%ntmsa            = get_tracer_index(Model%tracer_names, 'msa',        Model%me, Model%master, Model%debug)
+    Model%ntpp25           = get_tracer_index(Model%tracer_names, 'pp25',       Model%me, Model%master, Model%debug)
+    Model%ntbc1            = get_tracer_index(Model%tracer_names, 'bc1',        Model%me, Model%master, Model%debug)
+    Model%ntbc2            = get_tracer_index(Model%tracer_names, 'bc2',        Model%me, Model%master, Model%debug)
+    Model%ntoc1            = get_tracer_index(Model%tracer_names, 'oc1',        Model%me, Model%master, Model%debug)
+    Model%ntoc2            = get_tracer_index(Model%tracer_names, 'oc2',        Model%me, Model%master, Model%debug)
+    Model%ntdust1          = get_tracer_index(Model%tracer_names, 'dust1',      Model%me, Model%master, Model%debug)
+    Model%ntdust2          = get_tracer_index(Model%tracer_names, 'dust2',      Model%me, Model%master, Model%debug)
+    Model%ntdust3          = get_tracer_index(Model%tracer_names, 'dust3',      Model%me, Model%master, Model%debug)
+    Model%ntdust4          = get_tracer_index(Model%tracer_names, 'dust4',      Model%me, Model%master, Model%debug)
+    Model%ntdust5          = get_tracer_index(Model%tracer_names, 'dust5',      Model%me, Model%master, Model%debug)
+    Model%ntss1            = get_tracer_index(Model%tracer_names, 'seas1',      Model%me, Model%master, Model%debug)
+    Model%ntss2            = get_tracer_index(Model%tracer_names, 'seas2',      Model%me, Model%master, Model%debug)
+    Model%ntss3            = get_tracer_index(Model%tracer_names, 'seas3',      Model%me, Model%master, Model%debug)
+    Model%ntss4            = get_tracer_index(Model%tracer_names, 'seas4',      Model%me, Model%master, Model%debug)
+    Model%ntss5            = get_tracer_index(Model%tracer_names, 'seas5',      Model%me, Model%master, Model%debug)
+    Model%ntpp10           = get_tracer_index(Model%tracer_names, 'pp10',       Model%me, Model%master, Model%debug)
     if (Model%ntchs > 0) then
       Model%ntchm          = get_tracer_index(Model%tracer_names, 'pp10',       Model%me, Model%master, Model%debug)
       if (Model%ntchm > 0) then
@@ -4690,6 +4748,26 @@ module GFS_typedefs
       print *, ' ntia              : ', Model%ntia
       print *, ' ntchm             : ', Model%ntchm
       print *, ' ntchs             : ', Model%ntchs
+      print *, ' ntso2             : ', Model%ntso2
+      print *, ' ntsulf            : ', Model%ntsulf
+      print *, ' ntdms             : ', Model%ntdms
+      print *, ' ntmsa             : ', Model%ntmsa
+      print *, ' ntpp25            : ', Model%ntpp25
+      print *, ' ntbc1             : ', Model%ntbc1
+      print *, ' ntbc2             : ', Model%ntbc2
+      print *, ' ntoc1             : ', Model%ntoc1
+      print *, ' ntoc2             : ', Model%ntoc2
+      print *, ' ntdust1           : ', Model%ntdust1
+      print *, ' ntdust2           : ', Model%ntdust2
+      print *, ' ntdust3           : ', Model%ntdust3
+      print *, ' ntdust4           : ', Model%ntdust4
+      print *, ' ntdust5           : ', Model%ntdust5
+      print *, ' ntss1             : ', Model%ntss1
+      print *, ' ntss2             : ', Model%ntss2
+      print *, ' ntss3             : ', Model%ntss3
+      print *, ' ntss4             : ', Model%ntss4
+      print *, ' ntss5             : ', Model%ntss5
+      print *, ' ntpp10            : ', Model%ntpp10
       print *, ' fscav             : ', Model%fscav
       print *, ' '
       print *, 'derived totals for phy_f*d'
@@ -5608,7 +5686,7 @@ module GFS_typedefs
 
     ! -- initialize diagnostic variables depending on
     ! -- specific chemical tracers
-    if (Model%ntchm > 0) then
+!    if (Model%ntchm > 0) then
       ! -- retrieve number of dust bins
       n = get_number_bins('dust')
 #ifdef CCPP
@@ -5628,7 +5706,7 @@ module GFS_typedefs
         allocate (Diag%ssem(IM,n))
         Diag%ssem = zero
       end if
-    end if
+!    end if
 
     ! -- sedimentation and dry/wet deposition diagnostics
     if (associated(Model%ntdiag)) then
@@ -5987,6 +6065,10 @@ module GFS_typedefs
        allocate (Interstitial%f_rimef     (IM,Model%levs))
        allocate (Interstitial%cwm         (IM,Model%levs))
     end if
+
+    !-- chemistry coupling
+    allocate (Interstitial%buffer_ebu  (IM,Model%levs+1,7))
+
     if (Model%do_shoc) then
        if (.not. associated(Interstitial%qrn))  allocate (Interstitial%qrn  (IM,Model%levs))
        if (.not. associated(Interstitial%qsnw)) allocate (Interstitial%qsnw (IM,Model%levs))
@@ -6248,6 +6330,9 @@ module GFS_typedefs
          Interstitial%cwm       = clear_val
        end if
     end if
+
+!  chemistry coupling
+    Interstitial%buffer_ebu   = clear_val
 
     !
   end subroutine interstitial_rad_reset
