@@ -1869,6 +1869,13 @@
   dimensions = (horizontal_dimension,vertical_dimension)
   type = real
   kind = kind_phys
+[buffer_ebu]
+  standard_name = chem_buffer_ebu
+  long_name = chemistry buffer of ebu
+  units = various
+  dimensions = (horizontal_dimension,vertical_dimension_plus_one,1,7)
+  type = real
+  kind = kind_phys
 [nwfa2d]
   standard_name = tendency_of_water_friendly_aerosols_at_surface
   long_name = instantaneous water-friendly sfc aerosol source
@@ -6074,13 +6081,6 @@
   long_name = total cloud condensate mixing ratio (except water vapor) updated by physics
   units = kg kg-1
   dimensions = (horizontal_dimension,vertical_dimension)
-  type = real
-  kind = kind_phys
-[buffer_ebu]
-  standard_name = chem_buffer_ebu
-  long_name = chemistry buffer of ebu
-  units = various
-  dimensions = (horizontal_dimension,vertical_dimension_plus_one,7)
   type = real
   kind = kind_phys
 [adjsfculw_ocean]

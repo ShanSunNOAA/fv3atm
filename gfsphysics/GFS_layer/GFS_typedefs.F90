@@ -518,6 +518,9 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: dqdti   (:,:)   => null()  !< instantaneous total moisture tendency (kg/kg/s)
     real (kind=kind_phys), pointer :: ushfsfci(:)     => null()  !< instantaneous upward sensible heat flux (w/m**2)
     real (kind=kind_phys), pointer :: dkt     (:,:)   => null()  !< instantaneous dkt diffusion coefficient for temperature (m**2/s)
+    !-- chemistry coupling
+    real (kind=kind_phys), pointer :: buffer_ebu (:,:,:,:)   => null()  !<
+
 
     contains
       procedure :: create  => coupling_create  !<   allocate array data
@@ -1931,9 +1934,6 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: f_rimef    (:,:)   => null()  !<
     real (kind=kind_phys), pointer :: cwm        (:,:)   => null()  !<
 
-    !-- chemistry coupling
-    real (kind=kind_phys), pointer :: buffer_ebu (:,:,:)   => null()  !<
-
 
     contains
       procedure :: create      => interstitial_create     !<   allocate array data
@@ -2637,6 +2637,9 @@ module GFS_typedefs
       Coupling%dkt       = clear_val
       Coupling%dqdti     = clear_val
     endif
+    !-- chemistry coupling
+    allocate (Coupling%buffer_ebu  (IM,Model%levs+1,1,7))
+    Coupling%buffer_ebu   = clear_val
 
     !--- stochastic physics option
     if (Model%do_sppt) then
@@ -6066,8 +6069,6 @@ module GFS_typedefs
        allocate (Interstitial%cwm         (IM,Model%levs))
     end if
 
-    !-- chemistry coupling
-    allocate (Interstitial%buffer_ebu  (IM,Model%levs+1,7))
 
     if (Model%do_shoc) then
        if (.not. associated(Interstitial%qrn))  allocate (Interstitial%qrn  (IM,Model%levs))
@@ -6330,9 +6331,6 @@ module GFS_typedefs
          Interstitial%cwm       = clear_val
        end if
     end if
-
-!  chemistry coupling
-    Interstitial%buffer_ebu   = clear_val
 
     !
   end subroutine interstitial_rad_reset
