@@ -184,6 +184,18 @@ SCHEME_FILES = [
     'ccpp/physics/physics/sfc_nst.f',
     'ccpp/physics/physics/sfc_ocean.F',
     'ccpp/physics/physics/sfc_sice.f',
+    # gsdchem:
+    'ccpp/physics/gsdchem/gsd_chem_seas_wrapper.F90',
+    'ccpp/physics/gsdchem/gsd_chem_dust_wrapper.F90',
+    'ccpp/physics/gsdchem/gsd_chem_anthropogenic_wrapper.F90',
+    'ccpp/physics/gsdchem/gsd_chem_plume_wrapper.F90',
+    'ccpp/physics/gsdchem/gsd_chem_dmsemis_wrapper.F90',
+    'ccpp/physics/gsdchem/gsd_chem_gocart_wrapper.F90',
+    'ccpp/physics/gsdchem/gsd_chem_rad_wrapper.F90',
+    'ccpp/physics/gsdchem/gsd_chem_drydep_wrapper.F90',
+    'ccpp/physics/gsdchem/gsd_chem_lsdep_wrapper.F90',
+    'ccpp/physics/gsdchem/gsd_chem_settling_wrapper.F90',
+    'ccpp/physics/gsdchem/gsd_chem_diag_wrapper.F90',
     # HAFS FER_HIRES
     'ccpp/physics/physics/mp_fer_hires.F90',
     # RRTMGP
