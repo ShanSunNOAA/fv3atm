@@ -7288,7 +7288,7 @@
   standard_name = instantaneous_dust_emission_flux
   long_name = instantaneous dust emission flux
   units = kg m-2 s-1
-  dimensions = (horizonal_dimension,number_of_dust_bins_for_diagnostics)
+  dimensions = (horizontal_loop_extent,number_of_dust_bins_for_diagnostics)
   type = real
   kind = kind_phys
   active = (number_of_dust_bins_for_diagnostics > 0)
@@ -7296,7 +7296,7 @@
   standard_name = instantaneous_seasalt_emission_flux
   long_name = instantaneous sea salt emission flux
   units = kg m-2 s-1
-  dimensions = (horizonal_dimension,number_of_seasalt_bins_for_diagnostics)
+  dimensions = (horizontal_loop_extent,number_of_seasalt_bins_for_diagnostics)
   type = real
   kind = kind_phys
   active = (number_of_seasalt_bins_for_diagnostics > 0)
@@ -7304,7 +7304,7 @@
   standard_name = instantaneous_sedimentation
   long_name = instantaneous sedimentation
   units = kg m-2 s-1
-  dimensions = (horizonal_dimension,number_of_chemical_tracers_for_diagnostics)
+  dimensions = (horizontal_loop_extent,number_of_chemical_tracers_for_diagnostics)
   type = real
   kind = kind_phys
   active = (number_of_chemical_tracers_for_diagnostics > 0)
@@ -7312,7 +7312,7 @@
   standard_name = instantaneous_dry_deposition
   long_name = instantaneous dry deposition
   units = kg m-2 s-1
-  dimensions = (horizonal_dimension,number_of_chemical_tracers_for_diagnostics)
+  dimensions = (horizontal_loop_extent,number_of_chemical_tracers_for_diagnostics)
   type = real
   kind = kind_phys
   active = (number_of_chemical_tracers_for_diagnostics > 0)
@@ -7320,7 +7320,7 @@
   standard_name = instantaneous_large_scale_wet_deposition
   long_name = instantaneous large-scale wet deposition
   units = kg m-2 s-1
-  dimensions = (horizonal_dimension,number_of_chemical_tracers_for_diagnostics)
+  dimensions = (horizontal_loop_extent,number_of_chemical_tracers_for_diagnostics)
   type = real
   kind = kind_phys
   active = (number_of_chemical_tracers_for_diagnostics > 0)
@@ -7328,7 +7328,29 @@
   standard_name = instantaneous_convective_scale_wet_deposition
   long_name = instantaneous convective-scale wet deposition
   units = kg m-2 s-1
-  dimensions = (horizonal_dimension,number_of_chemical_tracers_for_diagnostics)
+  dimensions = (horizontal_loop_extent,number_of_chemical_tracers_for_diagnostics)
+  type = real
+  kind = kind_phys
+  active = (number_of_chemical_tracers_for_diagnostics > 0)
+[wetdpc_deep]
+  standard_name = instantaneous_deep_convective_wet_deposition
+  long_name = instantaneous deep convective wet deposition
+  units = kg m-2 s-1
+  dimensions = (horizontal_loop_extent,number_of_chemical_tracers)
+  type = real
+  kind = kind_phys
+[wetdpc_mid]
+  standard_name = instantaneous_mid_convective_wet_deposition
+  long_name = instantaneous mid convective wet deposition
+  units = kg m-2 s-1
+  dimensions = (horizontal_loop_extent,number_of_chemical_tracers)
+  type = real
+  kind = kind_phys
+[wetdpc_shal]
+  standard_name = instantaneous_shal_convective_wet_deposition
+  long_name = instantaneous shallow convective wet deposition
+  units = kg m-2 s-1
+  dimensions = (horizontal_loop_extent,number_of_chemical_tracers)
   type = real
   kind = kind_phys
   active = (number_of_chemical_tracers_for_diagnostics > 0)
