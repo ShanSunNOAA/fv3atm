@@ -515,6 +515,132 @@
   dimensions = (horizontal_loop_extent)
   type = real
   kind = kind_phys
+[cdland]
+  standard_name = land_surface_drag_coefficient_for_momentum
+  long_name = land surface exchange coeff for momentum
+  units = K
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+[cdocean]
+  standard_name = ocean_surface_drag_coefficient_for_momentum
+  long_name = ocean surface exchange coeff for momentum
+  units = K
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+[cdqland]
+  standard_name = land_surface_drag_coefficient_for_heat_and_moisture_in_air
+  long_name = land surface exchange coeff heat & moisture
+  units = K
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+[cdqocean]
+  standard_name = ocean_surface_drag_coefficient_for_heat_and_moisture_in_air
+  long_name = ocean surface exchange coeff heat & moisture
+  units = K
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+[rbland]
+  standard_name = land_bulk_richardson_number_at_lowest_model_level
+  long_name = land bulk Richardson number at the surface 
+  units = K
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+[rbocean]
+  standard_name = ocean_bulk_richardson_number_at_lowest_model_level
+  long_name = ocean bulk Richardson number at the surface 
+  units = K
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+[stressland]
+  standard_name = land_surface_wind_stress
+  long_name = land surface wind stress
+  units = K
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+[stressocean]
+  standard_name = ocean_surface_wind_stress
+  long_name = ocean surface wind stress
+  units = K
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+[ffmmland]
+  standard_name = land_Monin_Obukhov_similarity_function_for_momentum
+  long_name = land Monin-Obukhov similarity function for momentum
+  units = K
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+[ffmmocean]
+  standard_name = ocean_Monin_Obukhov_similarity_function_for_momentum
+  long_name = ocean Monin-Obukhov similarity function for momentum
+  units = K
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+[ffhhland]
+  standard_name = land_Monin_Obukhov_similarity_function_for_heat
+  long_name = land Monin-Obukhov similarity function for heat
+  units = K
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+[ffhhocean]
+  standard_name = ocean_Monin_Obukhov_similarity_function_for_heat
+  long_name = ocean Monin-Obukhov similarity function for heat
+  units = K
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+[uustarland]
+  standard_name = land_surface_friction_velocity
+  long_name = land surface friction velocity
+  units = K
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+[uustarocean]
+  standard_name = ocean_surface_friction_velocity
+  long_name = ocean surface friction velocity
+  units = K
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+[cmmland]
+  standard_name = land_surface_drag_wind_speed_for_momentum_in_air
+  long_name = land momentum exchange coefficient
+  units = K
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+[cmmocean]
+  standard_name = ocean_surface_drag_wind_speed_for_momentum_in_air
+  long_name = ocean momentum exchange coefficient
+  units = K
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+[chhland]
+  standard_name = land_surface_drag_mass_flux_for_heat_and_moisture_in_air
+  long_name = land surface_drag_mass_flux_for_heat_and_moisture_in_air
+  units = K
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
+[chhocean]
+  standard_name = ocean_surface_drag_mass_flux_for_heat_and_moisture_in_air
+  long_name = ocean surface_drag_mass_flux_for_heat_and_moisture_in_air
+  units = K
+  dimensions = (horizontal_loop_extent)
+  type = real
+  kind = kind_phys
 [tisfc]
   standard_name = sea_ice_temperature
   long_name = sea ice surface skin temperature

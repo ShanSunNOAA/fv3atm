@@ -241,6 +241,26 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: z0base (:)   => null()  !< background or baseline surface roughness length in m
     real (kind=kind_phys), pointer :: semisbase(:) => null()  !< background surface emissivity
 
+!!! my diag
+    real (kind=kind_phys), pointer :: cdland(:) => null()
+    real (kind=kind_phys), pointer :: cdocean(:) => null()
+    real (kind=kind_phys), pointer :: cdqland(:) => null()
+    real (kind=kind_phys), pointer :: cdqocean(:) => null()
+    real (kind=kind_phys), pointer :: rbland(:) => null()
+    real (kind=kind_phys), pointer :: rbocean(:) => null()
+    real (kind=kind_phys), pointer :: stressland(:) => null()
+    real (kind=kind_phys), pointer :: stressocean(:) => null()
+    real (kind=kind_phys), pointer :: ffmmland(:) => null()
+    real (kind=kind_phys), pointer :: ffmmocean(:) => null()
+    real (kind=kind_phys), pointer :: ffhhland(:) => null()
+    real (kind=kind_phys), pointer :: ffhhocean(:) => null()
+    real (kind=kind_phys), pointer :: uustarland(:) => null()
+    real (kind=kind_phys), pointer :: uustarocean(:) => null()
+    real (kind=kind_phys), pointer :: cmmland(:) => null()
+    real (kind=kind_phys), pointer :: cmmocean(:) => null()
+    real (kind=kind_phys), pointer :: chhland(:) => null()
+    real (kind=kind_phys), pointer :: chhocean(:) => null()
+
 !--- In (radiation only)
     real (kind=kind_phys), pointer :: sncovr (:)   => null()  !< snow cover in fraction over land
     real (kind=kind_phys), pointer :: sncovr_ice (:)  => null()  !< snow cover in fraction over ice (RUC LSM only)
@@ -2273,6 +2293,36 @@ module GFS_typedefs
     allocate (Sfcprop%fice     (IM))
 !   allocate (Sfcprop%hprim    (IM))
     allocate (Sfcprop%hprime   (IM,Model%nmtvr))
+
+! mydiag
+    allocate (Sfcprop%cdland(IM),Sfcprop%cdocean(IM))
+    allocate (Sfcprop%cdqland(IM),Sfcprop%cdqocean(IM))
+    allocate (Sfcprop%rbland(IM),Sfcprop%rbocean(IM))
+    allocate (Sfcprop%stressland(IM),Sfcprop%stressocean(IM))
+    allocate (Sfcprop%ffmmland(IM),Sfcprop%ffmmocean(IM))
+    allocate (Sfcprop%ffhhland(IM),Sfcprop%ffhhocean(IM))
+    allocate (Sfcprop%uustarland(IM),Sfcprop%uustarocean(IM))
+    allocate (Sfcprop%cmmland(IM),Sfcprop%cmmocean(IM))
+    allocate (Sfcprop%chhland(IM),Sfcprop%chhocean(IM))
+
+    Sfcprop%cdland = clear_val
+    Sfcprop%cdocean = clear_val
+    Sfcprop%cdqland = clear_val
+    Sfcprop%cdqocean = clear_val
+    Sfcprop%rbland = clear_val
+    Sfcprop%rbocean = clear_val
+    Sfcprop%stressland = clear_val
+    Sfcprop%stressocean = clear_val
+    Sfcprop%ffmmland = clear_val
+    Sfcprop%ffmmocean = clear_val
+    Sfcprop%ffhhland = clear_val
+    Sfcprop%ffhhocean = clear_val
+    Sfcprop%uustarland = clear_val
+    Sfcprop%uustarocean = clear_val
+    Sfcprop%cmmland = clear_val
+    Sfcprop%cmmocean = clear_val
+    Sfcprop%chhland = clear_val
+    Sfcprop%chhocean = clear_val
 
     Sfcprop%slmsk     = clear_val
     Sfcprop%oceanfrac = clear_val

@@ -3140,6 +3140,251 @@ module GFS_diagnostics
     enddo
 
     if (Model%frac_grid) then
+
+      idx = idx + 1
+      ExtDiag(idx)%axes = 2
+      ExtDiag(idx)%name = 'tsfcl'
+      ExtDiag(idx)%desc = 'land surface temperature'
+      ExtDiag(idx)%unit = 'K'
+      ExtDiag(idx)%mod_name = 'gfs_sfc'
+      allocate (ExtDiag(idx)%data(nblks))
+      do nb = 1,nblks
+        ExtDiag(idx)%data(nb)%var2 => Sfcprop(nb)%tsfcl(:)
+      enddo
+
+      idx = idx + 1
+      ExtDiag(idx)%axes = 2
+      ExtDiag(idx)%name = 'sst'
+      ExtDiag(idx)%desc = 'sea surface temperature'
+      ExtDiag(idx)%unit = 'K'
+      ExtDiag(idx)%mod_name = 'gfs_sfc'
+      allocate (ExtDiag(idx)%data(nblks))
+      do nb = 1,nblks
+        ExtDiag(idx)%data(nb)%var2 => Sfcprop(nb)%tsfco(:)
+      enddo
+
+      idx = idx + 1
+      ExtDiag(idx)%axes = 2
+      ExtDiag(idx)%name = 'zorll'
+      ExtDiag(idx)%desc = 'zorll'
+      ExtDiag(idx)%unit = 'XXX'
+      ExtDiag(idx)%mod_name = 'gfs_sfc'
+      allocate (ExtDiag(idx)%data(nblks))
+      do nb = 1,nblks
+        ExtDiag(idx)%data(nb)%var2 => Sfcprop(nb)%zorll(:)
+      enddo
+  
+      idx = idx + 1
+      ExtDiag(idx)%axes = 2
+      ExtDiag(idx)%name = 'zorlo'
+      ExtDiag(idx)%desc = 'zorlo'
+      ExtDiag(idx)%unit = 'XXX'
+      ExtDiag(idx)%mod_name = 'gfs_sfc'
+      allocate (ExtDiag(idx)%data(nblks))
+      do nb = 1,nblks
+        ExtDiag(idx)%data(nb)%var2 => Sfcprop(nb)%zorlo(:)
+      enddo
+  
+      idx = idx + 1
+      ExtDiag(idx)%axes = 2
+      ExtDiag(idx)%name = 'cdland'
+      ExtDiag(idx)%desc = 'cdland'
+      ExtDiag(idx)%unit = 'XXX'
+      ExtDiag(idx)%mod_name = 'gfs_sfc'
+      allocate (ExtDiag(idx)%data(nblks))
+      do nb = 1,nblks
+        ExtDiag(idx)%data(nb)%var2 => Sfcprop(nb)%cdland(:)
+      enddo
+  
+      idx = idx + 1
+      ExtDiag(idx)%axes = 2
+      ExtDiag(idx)%name = 'cdocean'
+      ExtDiag(idx)%desc = 'cdocean'
+      ExtDiag(idx)%unit = 'XXX'
+      ExtDiag(idx)%mod_name = 'gfs_sfc'
+      allocate (ExtDiag(idx)%data(nblks))
+      do nb = 1,nblks
+        ExtDiag(idx)%data(nb)%var2 => Sfcprop(nb)%cdocean(:)
+      enddo
+  
+      idx = idx + 1
+      ExtDiag(idx)%axes = 2
+      ExtDiag(idx)%name = 'cdqland'
+      ExtDiag(idx)%desc = 'cdqland'
+      ExtDiag(idx)%unit = 'XXX'
+      ExtDiag(idx)%mod_name = 'gfs_sfc'
+      allocate (ExtDiag(idx)%data(nblks))
+      do nb = 1,nblks
+        ExtDiag(idx)%data(nb)%var2 => Sfcprop(nb)%cdqland(:)
+      enddo
+  
+      idx = idx + 1
+      ExtDiag(idx)%axes = 2
+      ExtDiag(idx)%name = 'cdqocean'
+      ExtDiag(idx)%desc = 'cdqocean'
+      ExtDiag(idx)%unit = 'XXX'
+      ExtDiag(idx)%mod_name = 'gfs_sfc'
+      allocate (ExtDiag(idx)%data(nblks))
+      do nb = 1,nblks
+        ExtDiag(idx)%data(nb)%var2 => Sfcprop(nb)%cdqocean(:)
+      enddo
+  
+      idx = idx + 1
+      ExtDiag(idx)%axes = 2
+      ExtDiag(idx)%name = 'rbland'
+      ExtDiag(idx)%desc = 'rbland'
+      ExtDiag(idx)%unit = 'XXX'
+      ExtDiag(idx)%mod_name = 'gfs_sfc'
+      allocate (ExtDiag(idx)%data(nblks))
+      do nb = 1,nblks
+        ExtDiag(idx)%data(nb)%var2 => Sfcprop(nb)%rbland(:)
+      enddo
+  
+      idx = idx + 1
+      ExtDiag(idx)%axes = 2
+      ExtDiag(idx)%name = 'rbocean'
+      ExtDiag(idx)%desc = 'rbocean'
+      ExtDiag(idx)%unit = 'XXX'
+      ExtDiag(idx)%mod_name = 'gfs_sfc'
+      allocate (ExtDiag(idx)%data(nblks))
+      do nb = 1,nblks
+        ExtDiag(idx)%data(nb)%var2 => Sfcprop(nb)%rbocean(:)
+      enddo
+  
+      idx = idx + 1
+      ExtDiag(idx)%axes = 2
+      ExtDiag(idx)%name = 'stressland'
+      ExtDiag(idx)%desc = 'stressland'
+      ExtDiag(idx)%unit = 'XXX'
+      ExtDiag(idx)%mod_name = 'gfs_sfc'
+      allocate (ExtDiag(idx)%data(nblks))
+      do nb = 1,nblks
+        ExtDiag(idx)%data(nb)%var2 => Sfcprop(nb)%stressland(:)
+      enddo
+  
+      idx = idx + 1
+      ExtDiag(idx)%axes = 2
+      ExtDiag(idx)%name = 'stressocean'
+      ExtDiag(idx)%desc = 'stressocean'
+      ExtDiag(idx)%unit = 'XXX'
+      ExtDiag(idx)%mod_name = 'gfs_sfc'
+      allocate (ExtDiag(idx)%data(nblks))
+      do nb = 1,nblks
+        ExtDiag(idx)%data(nb)%var2 => Sfcprop(nb)%stressocean(:)
+      enddo
+  
+      idx = idx + 1
+      ExtDiag(idx)%axes = 2
+      ExtDiag(idx)%name = 'ffhhland'
+      ExtDiag(idx)%desc = 'land fh parameter from PBL scheme'
+      ExtDiag(idx)%unit = 'XXX'
+      ExtDiag(idx)%mod_name = 'gfs_sfc'
+      allocate (ExtDiag(idx)%data(nblks))
+      do nb = 1,nblks
+        ExtDiag(idx)%data(nb)%var2 => Sfcprop(nb)%ffhhland(:)
+      enddo
+  
+      idx = idx + 1
+      ExtDiag(idx)%axes = 2
+      ExtDiag(idx)%name = 'ffhhocean'
+      ExtDiag(idx)%desc = 'ocean fh parameter from PBL scheme'
+      ExtDiag(idx)%unit = 'XXX'
+      ExtDiag(idx)%mod_name = 'gfs_sfc'
+      allocate (ExtDiag(idx)%data(nblks))
+      do nb = 1,nblks
+        ExtDiag(idx)%data(nb)%var2 => Sfcprop(nb)%ffhhocean(:)
+      enddo
+  
+      idx = idx + 1
+      ExtDiag(idx)%axes = 2
+      ExtDiag(idx)%name = 'ffmmland'
+      ExtDiag(idx)%desc = 'land fm parameter from PBL scheme'
+      ExtDiag(idx)%unit = 'XXX'
+      ExtDiag(idx)%mod_name = 'gfs_sfc'
+      allocate (ExtDiag(idx)%data(nblks))
+      do nb = 1,nblks
+        ExtDiag(idx)%data(nb)%var2 => Sfcprop(nb)%ffmmland(:)
+      enddo
+  
+      idx = idx + 1
+      ExtDiag(idx)%axes = 2
+      ExtDiag(idx)%name = 'ffmmocean'
+      ExtDiag(idx)%desc = 'ocean fm parameter from PBL scheme'
+      ExtDiag(idx)%unit = 'XXX'
+      ExtDiag(idx)%mod_name = 'gfs_sfc'
+      allocate (ExtDiag(idx)%data(nblks))
+      do nb = 1,nblks
+        ExtDiag(idx)%data(nb)%var2 => Sfcprop(nb)%ffmmocean(:)
+      enddo
+  
+      idx = idx + 1
+      ExtDiag(idx)%axes = 2
+      ExtDiag(idx)%name = 'uustarland'
+      ExtDiag(idx)%desc = 'land ustar surface frictional wind'
+      ExtDiag(idx)%unit = 'XXX'
+      ExtDiag(idx)%mod_name = 'gfs_sfc'
+      allocate (ExtDiag(idx)%data(nblks))
+      do nb = 1,nblks
+        ExtDiag(idx)%data(nb)%var2 => Sfcprop(nb)%uustarland(:)
+      enddo
+
+      idx = idx + 1
+      ExtDiag(idx)%axes = 2
+      ExtDiag(idx)%name = 'uustarocean'
+      ExtDiag(idx)%desc = 'ocean ustar surface frictional wind'
+      ExtDiag(idx)%unit = 'XXX'
+      ExtDiag(idx)%mod_name = 'gfs_sfc'
+      allocate (ExtDiag(idx)%data(nblks))
+      do nb = 1,nblks
+        ExtDiag(idx)%data(nb)%var2 => Sfcprop(nb)%uustarocean(:)
+      enddo
+
+      idx = idx + 1
+      ExtDiag(idx)%axes = 2
+      ExtDiag(idx)%name = 'chhland'
+      ExtDiag(idx)%desc = 'land Exchange Coefficient'
+      ExtDiag(idx)%unit = 'kg/m2/s'
+      ExtDiag(idx)%mod_name = 'gfs_phys'
+      allocate (ExtDiag(idx)%data(nblks))
+      do nb = 1,nblks
+        ExtDiag(idx)%data(nb)%var2 => Sfcprop(nb)%chhland(:)
+      enddo
+  
+      idx = idx + 1
+      ExtDiag(idx)%axes = 2
+      ExtDiag(idx)%name = 'chhocean'
+      ExtDiag(idx)%desc = 'ocean Exchange Coefficient'
+      ExtDiag(idx)%unit = 'kg/m2/s'
+      ExtDiag(idx)%mod_name = 'gfs_phys'
+      allocate (ExtDiag(idx)%data(nblks))
+      do nb = 1,nblks
+        ExtDiag(idx)%data(nb)%var2 => Sfcprop(nb)%chhocean(:)
+      enddo
+  
+      idx = idx + 1
+      ExtDiag(idx)%axes = 2
+      ExtDiag(idx)%name = 'cmmland'
+      ExtDiag(idx)%desc = 'land Aerodynamic conductance'
+      ExtDiag(idx)%unit = 'm/s'
+      ExtDiag(idx)%mod_name = 'gfs_phys'
+      allocate (ExtDiag(idx)%data(nblks))
+      do nb = 1,nblks
+        ExtDiag(idx)%data(nb)%var2 => Sfcprop(nb)%cmmland(:)
+      enddo
+  
+      idx = idx + 1
+      ExtDiag(idx)%axes = 2
+      ExtDiag(idx)%name = 'cmmocean'
+      ExtDiag(idx)%desc = 'ocean Aerodynamic conductance'
+      ExtDiag(idx)%unit = 'm/s'
+      ExtDiag(idx)%mod_name = 'gfs_phys'
+      allocate (ExtDiag(idx)%data(nblks))
+      do nb = 1,nblks
+        ExtDiag(idx)%data(nb)%var2 => Sfcprop(nb)%cmmocean(:)
+      enddo
+  
+! -- end of new arrays
+
       do num = 1,Model%kice
         write (xtra,'(i1)') num
         idx = idx + 1
