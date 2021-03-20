@@ -9,4 +9,4 @@
 [submodule "ccpp/physics"]
 	path = ccpp/physics
 	url = https://github.com/shansun6/ccpp-physics
-	branch = v16_v0319_wzben
+	branch = v16_v0317_wzben
