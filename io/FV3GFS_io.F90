@@ -680,16 +680,16 @@ module FV3GFS_io_mod
       print*, 'isc, iec, jsc, jec =', isc, iec, jsc, jec
       nb = 1
       print*, 'Atm_block%blksz(1) =', Atm_block%blksz(nb)
-      i_start=Atm_block%index(nb)%ii(1) - isc + 1; j_start=Atm_block%index(nb)%jj(1) - jsc + 1
-      print*, 'i,j start=',i_start, j_start
-      num = Atm_block%blksz(nb)
-      i_end=Atm_block%index(nb)%ii(num) - isc + 1; j_end=Atm_block%index(nb)%jj(num) - jsc + 1
-      print*, 'i,j end=', i_end, j_end
-      do i = 1, 5
-        print*, 'min/max dust_in(:,i) = ',minval(Sfcprop(nb)%dust_in(:,i)),maxval(Sfcprop(nb)%dust_in(:,i)),i
-        print*, 'min/max dust_var(:,:,i)=',minval(dust_var(i_start:i_end,j_start:j_end,i)),&
-                 maxval(dust_var(i_start:i_end,j_start:j_end,i)),i
-      enddo
+!!      i_start=Atm_block%index(nb)%ii(1) - isc + 1; j_start=Atm_block%index(nb)%jj(1) - jsc + 1
+!!      print*, 'i,j start=',i_start, j_start
+!!      num = Atm_block%blksz(nb)
+!!      i_end=Atm_block%index(nb)%ii(num) - isc + 1; j_end=Atm_block%index(nb)%jj(num) - jsc + 1
+!!      print*, 'i,j end=', i_end, j_end
+!!      do i = 1, 5
+!!        print*, 'min/max dust_in(:,i) = ',minval(Sfcprop(nb)%dust_in(:,i)),maxval(Sfcprop(nb)%dust_in(:,i)),i
+!!        print*, 'min/max dust_var(:,:,i)=',minval(dust_var(i_start:i_end,j_start:j_end,i)),&
+!!                 maxval(dust_var(i_start:i_end,j_start:j_end,i)),i
+!!      enddo
     endif
 
     deallocate(dust_name, dust_var)
