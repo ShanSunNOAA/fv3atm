@@ -114,6 +114,7 @@ public atmos_model_exchange_phase_1, atmos_model_exchange_phase_2
 public atmos_model_restart
 public get_atmos_model_ungridded_dim
 public addLsmask2grid
+public setup_exportdata
 !-----------------------------------------------------------------------
 
 !<PUBLICTYPE >
@@ -229,6 +230,7 @@ subroutine update_atmos_radiation_physics (Atmos)
   implicit none
   type (atmos_data_type), intent(in) :: Atmos
 !--- local variables---
+    integer :: idtend, itrac
     integer :: nb, jdat(8), rc, ierr
 
     if (mpp_pe() == mpp_root_pe() .and. debug) write(6,*) "statein driver"
@@ -256,7 +258,7 @@ subroutine update_atmos_radiation_physics (Atmos)
                                  jdat(5), jdat(6), jdat(7))
       GFS_control%jdat(:) = jdat(:)
 
-!--- execute the IPD atmospheric setup step
+!--- execute the atmospheric setup step
       call mpp_clock_begin(setupClock)
       call CCPP_step (step="timestep_init", nblks=Atm_block%nblks, ierr=ierr)
       if (ierr/=0)  call mpp_error(FATAL, 'Call to CCPP timestep_init step failed')
@@ -267,37 +269,47 @@ subroutine update_atmos_radiation_physics (Atmos)
 
 !--- if coupled, assign coupled fields
 
-      if( GFS_control%cplflx .or. GFS_control%cplwav ) then
-
-!       if (mpp_pe() == mpp_root_pe() .and. debug) then
-!          print *,'in atmos_model,nblks=',Atm_block%nblks
-!         print *,'in atmos_model,GFS_data size=',size(GFS_data)
-!         print *,'in atmos_model,tsfc(1)=',GFS_data(1)%sfcprop%tsfc(1)
-!         print *,'in atmos_model, tsfc size=',size(GFS_data(1)%sfcprop%tsfc)
-!       endif
-
+      if (.not. GFS_control%cplchm) then
         call assign_importdata(rc)
-
       endif
 
-      ! Calculate total non-physics tendencies by substracting old IPD Stateout
-      ! variables from new/updated IPD Statein variables (gives the tendencies
+      ! Calculate total non-physics tendencies by substracting old GFS Stateout
+      ! variables from new/updated GFS Statein variables (gives the tendencies
       ! due to anything else than physics)
-      if (GFS_control%ldiag3d) then
-        do nb = 1,Atm_block%nblks
-          GFS_data(nb)%Intdiag%du3dt(:,:,8)  = GFS_data(nb)%Intdiag%du3dt(:,:,8)  &
-                                              + (GFS_data(nb)%Statein%ugrs - GFS_data(nb)%Stateout%gu0)
-          GFS_data(nb)%Intdiag%dv3dt(:,:,8)  = GFS_data(nb)%Intdiag%dv3dt(:,:,8)  &
-                                              + (GFS_data(nb)%Statein%vgrs - GFS_data(nb)%Stateout%gv0)
-          GFS_data(nb)%Intdiag%dt3dt(:,:,11) = GFS_data(nb)%Intdiag%dt3dt(:,:,11) &
-                                              + (GFS_data(nb)%Statein%tgrs - GFS_data(nb)%Stateout%gt0)
-        enddo
-        if (GFS_control%qdiag3d) then
+      if (GFS_Control%ldiag3d) then
+        idtend = GFS_Control%dtidx(GFS_Control%index_of_x_wind,GFS_Control%index_of_process_non_physics)
+        if(idtend>=1) then
           do nb = 1,Atm_block%nblks
-            GFS_data(nb)%Intdiag%dq3dt(:,:,12) = GFS_data(nb)%Intdiag%dq3dt(:,:,12) &
-                  + (GFS_data(nb)%Statein%qgrs(:,:,GFS_control%ntqv) - GFS_data(nb)%Stateout%gq0(:,:,GFS_control%ntqv))
-            GFS_data(nb)%Intdiag%dq3dt(:,:,13) = GFS_data(nb)%Intdiag%dq3dt(:,:,13) &
-                  + (GFS_data(nb)%Statein%qgrs(:,:,GFS_control%ntoz) - GFS_data(nb)%Stateout%gq0(:,:,GFS_control%ntoz))
+            GFS_data(nb)%Intdiag%dtend(:,:,idtend) = GFS_data(nb)%Intdiag%dtend(:,:,idtend) &
+                 + (GFS_data(nb)%Statein%ugrs - GFS_data(nb)%Stateout%gu0)
+          enddo
+        endif
+
+        idtend = GFS_Control%dtidx(GFS_Control%index_of_y_wind,GFS_Control%index_of_process_non_physics)
+        if(idtend>=1) then
+          do nb = 1,Atm_block%nblks
+            GFS_data(nb)%Intdiag%dtend(:,:,idtend) = GFS_data(nb)%Intdiag%dtend(:,:,idtend) &
+                 + (GFS_data(nb)%Statein%vgrs - GFS_data(nb)%Stateout%gv0)
+          enddo
+        endif
+
+        idtend = GFS_Control%dtidx(GFS_Control%index_of_temperature,GFS_Control%index_of_process_non_physics)
+        if(idtend>=1) then
+          do nb = 1,Atm_block%nblks
+            GFS_data(nb)%Intdiag%dtend(:,:,idtend) = GFS_data(nb)%Intdiag%dtend(:,:,idtend) &
+                 + (GFS_data(nb)%Statein%tgrs - GFS_data(nb)%Stateout%gt0)
+          enddo
+        endif
+
+        if (GFS_Control%qdiag3d) then
+          do itrac=1,GFS_Control%ntrac
+            idtend = GFS_Control%dtidx(itrac+100,GFS_Control%index_of_process_non_physics)
+            if(idtend>=1) then
+              do nb = 1,Atm_block%nblks
+                GFS_data(nb)%Intdiag%dtend(:,:,idtend) = GFS_data(nb)%Intdiag%dtend(:,:,idtend) &
+                     + (GFS_data(nb)%Statein%qgrs(:,:,itrac) - GFS_data(nb)%Stateout%gq0(:,:,itrac))
+              enddo
+            endif
           enddo
         endif
       endif
@@ -306,7 +318,7 @@ subroutine update_atmos_radiation_physics (Atmos)
 
       if (mpp_pe() == mpp_root_pe() .and. debug) write(6,*) "radiation driver"
 
-!--- execute the IPD atmospheric radiation subcomponent (RRTM)
+!--- execute the atmospheric radiation subcomponent (RRTM)
 
       call mpp_clock_begin(radClock)
       ! Performance improvement. Only enter if it is time to call the radiation physics.
@@ -323,7 +335,7 @@ subroutine update_atmos_radiation_physics (Atmos)
 
       if (mpp_pe() == mpp_root_pe() .and. debug) write(6,*) "physics driver"
 
-!--- execute the IPD atmospheric physics step1 subcomponent (main physics driver)
+!--- execute the atmospheric physics step1 subcomponent (main physics driver)
 
       call mpp_clock_begin(physClock)
       call CCPP_step (step="physics", nblks=Atm_block%nblks, ierr=ierr)
@@ -337,7 +349,7 @@ subroutine update_atmos_radiation_physics (Atmos)
 
       if (mpp_pe() == mpp_root_pe() .and. debug) write(6,*) "stochastic physics driver"
 
-!--- execute the IPD atmospheric physics step2 subcomponent (stochastic physics driver)
+!--- execute the atmospheric physics step2 subcomponent (stochastic physics driver)
 
       call mpp_clock_begin(physClock)
       call CCPP_step (step="stochastics", nblks=Atm_block%nblks, ierr=ierr)
@@ -351,7 +363,7 @@ subroutine update_atmos_radiation_physics (Atmos)
       call getiauforcing(GFS_control,IAU_data)
       if (mpp_pe() == mpp_root_pe() .and. debug) write(6,*) "end of radiation and physics step"
 
-!--- execute the IPD atmospheric timestep finalize step
+!--- execute the atmospheric timestep finalize step
       call mpp_clock_begin(setupClock)
       call CCPP_step (step="timestep_finalize", nblks=Atm_block%nblks, ierr=ierr)
       if (ierr/=0)  call mpp_error(FATAL, 'Call to CCPP timestep_finalize step failed')
@@ -506,24 +518,6 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
 
    logunit = stdlog()
 
-!-----------------------------------------------------------------------
-! initialize atmospheric model -----
-
-   IF ( file_exist('input.nml')) THEN
-#ifdef INTERNAL_FILE_NML
-      read(input_nml_file, nml=atmos_model_nml, iostat=io)
-      ierr = check_nml_error(io, 'atmos_model_nml')
-#else
-      unit = open_namelist_file ( )
-      ierr=1
-      do while (ierr /= 0)
-         read  (unit, nml=atmos_model_nml, iostat=io, end=10)
-         ierr = check_nml_error(io,'atmos_model_nml')
-      enddo
- 10     call close_file (unit)
-#endif
-   endif
-
 !---------- initialize atmospheric dynamics after reading the namelist -------
 !---------- (need name of CCPP suite definition file from input.nml) ---------
    call atmosphere_init (Atmos%Time_init, Atmos%Time, Atmos%Time_step,&
@@ -543,6 +537,25 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
 
    Atmos%mlon = mlon
    Atmos%mlat = mlat
+
+!----------------------------------------------------------------------------------------------
+! initialize atmospheric model - must happen AFTER atmosphere_init so that nests work correctly
+
+   IF ( file_exist('input.nml')) THEN
+#ifdef INTERNAL_FILE_NML
+      read(input_nml_file, nml=atmos_model_nml, iostat=io)
+      ierr = check_nml_error(io, 'atmos_model_nml')
+#else
+      unit = open_namelist_file ( )
+      ierr=1
+      do while (ierr /= 0)
+         read  (unit, nml=atmos_model_nml, iostat=io, end=10)
+         ierr = check_nml_error(io,'atmos_model_nml')
+      enddo
+ 10     call close_file (unit)
+#endif
+   endif
+
 !-----------------------------------------------------------------------
 !--- before going any further check definitions for 'blocks'
 !-----------------------------------------------------------------------
@@ -591,7 +604,7 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
    do i = 1, ntracers
      call get_tracer_names(MODEL_ATMOS, i, tracer_names(i))
    enddo
-!--- setup IPD Init_parm
+!--- setup Init_parm
    Init_parm%me              =  mpp_pe()
    Init_parm%master          =  mpp_root_pe()
    Init_parm%tile_num        =  tile_num
@@ -617,6 +630,7 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
    Init_parm%xlon            => Atmos%lon
    Init_parm%xlat            => Atmos%lat
    Init_parm%area            => Atmos%area
+   Init_parm%nwat            = Atm(mygrid)%flagstruct%nwat
    Init_parm%tracer_names    => tracer_names
    Init_parm%restart         = Atm(mygrid)%flagstruct%warm_start
    Init_parm%hydrostatic     = Atm(mygrid)%flagstruct%hydrostatic
@@ -634,7 +648,7 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
 #endif
 
    call GFS_initialize (GFS_control, GFS_data%Statein, GFS_data%Stateout, GFS_data%Sfcprop,     &
-                        GFS_data%Coupling, GFS_data%Grid, GFS_data%Tbd, GFS_data%Cldprop, GFS_data%Radtend, & 
+                        GFS_data%Coupling, GFS_data%Grid, GFS_data%Tbd, GFS_data%Cldprop, GFS_data%Radtend, &
                         GFS_data%Intdiag, GFS_interstitial, commglobal, mpp_npes(), Init_parm)
 
    !--- populate/associate the Diag container elements
@@ -755,12 +769,6 @@ subroutine atmos_model_init (Atmos, Time_init, Time, Time_step)
 
 !--- get bottom layer data from dynamical core for coupling
    call atmosphere_get_bottom_layer (Atm_block, DYCORE_Data)
-
-    !if in coupled mode, set up coupled fields
-    if (GFS_control%cplflx .or. GFS_control%cplwav) then
-      if (mpp_pe() == mpp_root_pe()) print *,'COUPLING: IPD layer'
-      call setup_exportdata(ierr)
-    endif
 
    ! Set flag for first time step of time integration
    GFS_control%first_time_step = .true.
@@ -932,8 +940,8 @@ subroutine update_atmos_model_state (Atmos)
     call atmosphere_get_bottom_layer (Atm_block, DYCORE_Data)
 
     !if in coupled mode, set up coupled fields
-    if (GFS_control%cplflx .or. GFS_control%cplwav) then
-      call setup_exportdata(rc)
+    if (.not. GFS_control%cplchm) then
+      call setup_exportdata()
     endif
 
  end subroutine update_atmos_model_state
@@ -981,7 +989,7 @@ subroutine atmos_model_end (Atmos)
     call stochastic_physics_wrapper_end(GFS_control)
 
 !   Fast physics (from dynamics) are finalized in atmosphere_end above;
-!   standard/slow physics (from IPD) are finalized in CCPP_step 'finalize'.
+!   standard/slow physics (from CCPP) are finalized in CCPP_step 'finalize'.
 !   The CCPP framework for all cdata structures is finalized in CCPP_step 'finalize'.
     call CCPP_step (step="finalize", nblks=Atm_block%nblks, ierr=ierr)
     if (ierr/=0)  call mpp_error(FATAL, 'Call to CCPP finalize step failed')
@@ -1610,19 +1618,21 @@ end subroutine atmos_data_type_chksum
 
   subroutine assign_importdata(rc)
 
-    use module_cplfields,  only: importFields, nImportFields, QueryFieldList, &
-                                 ImportFieldsList, importFieldsValid
+    use module_cplfields,  only: importFields, nImportFields, queryImportFields, &
+                                 importFieldsValid
     use ESMF
 !
     implicit none
     integer, intent(out) :: rc
 
     !--- local variables
-    integer :: n, j, i, ix, nb, isc, iec, jsc, jec, dimCount, findex
+    integer :: n, j, i, k, ix, nb, isc, iec, jsc, jec, nk, dimCount, findex
+    integer :: sphum, liq_wat, ice_wat, o3mr
     character(len=128) :: impfield_name, fldname
     type(ESMF_TypeKind_Flag)                           :: datatype
     real(kind=ESMF_KIND_R4),  dimension(:,:), pointer  :: datar42d
     real(kind=ESMF_KIND_R8),  dimension(:,:), pointer  :: datar82d
+    real(kind=ESMF_KIND_R8),  dimension(:,:,:), pointer:: datar83d
     real(kind=GFS_kind_phys), dimension(:,:), pointer  :: datar8
     real(kind=GFS_kind_phys)                           :: tem, ofrac
     logical found, isFieldCreated, lcpl_fice
@@ -1630,12 +1640,14 @@ end subroutine atmos_data_type_chksum
 !
 !------------------------------------------------------------------------------
 !
-! set up local dimension
     rc  = -999
+
+! set up local dimension
     isc = GFS_control%isc
     iec = GFS_control%isc+GFS_control%nx-1
     jsc = GFS_control%jsc
     jec = GFS_control%jsc+GFS_control%ny-1
+    nk  = Atm_block%npz
     lcpl_fice = .false.
 
     allocate(datar8(isc:iec,jsc:jec))
@@ -1648,7 +1660,6 @@ end subroutine atmos_data_type_chksum
     do n=1,nImportFields ! Each import field is only available if it was connected in the import state.
 
       found = .false.
-
 
       isFieldCreated = ESMF_FieldIsCreated(importFields(n), rc=rc)
       if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
@@ -1673,14 +1684,22 @@ end subroutine atmos_data_type_chksum
 !            call ESMF_FieldGet(importFields(n),farrayPtr=datar42d,localDE=0, rc=rc)
 !            datar8 = datar42d
           endif
+
+        else if( dimCount == 3) then
+          if ( datatype == ESMF_TYPEKIND_R8) then
+            call ESMF_FieldGet(importFields(n),farrayPtr=datar83d,localDE=0, rc=rc)
+            if (ESMF_LogFoundError(rcToCheck=rc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__)) return
+            found = .true.
+          endif
         endif
 !
-        if (found .and. datar8(isc,jsc) > -99998.0) then
+        if (found) then
+         if (datar8(isc,jsc) > -99998.0) then
 !
         ! get sea land mask: in order to update the coupling fields over the ocean/ice
 !        fldname = 'land_mask'
 !        if (trim(impfield_name) == trim(fldname)) then
-!          findex = QueryFieldList(ImportFieldsList,fldname)
+!          findex = queryImportFields(fldname)
 !          if (importFieldsValid(findex)) then
 !!$omp parallel do default(shared) private(i,j,nb,ix)
 !            do j=jsc,jec
@@ -1699,7 +1718,7 @@ end subroutine atmos_data_type_chksum
 !----------------------------
           fldname = 'wave_z0_roughness_length'
           if (trim(impfield_name) == trim(fldname)) then
-            findex = QueryFieldList(ImportFieldsList,fldname)
+            findex = queryImportFields(fldname)
             if (importFieldsValid(findex) .and. GFS_control%cplwav2atm) then
 !$omp parallel do default(shared) private(i,j,nb,ix,tem)
               do j=jsc,jec
@@ -1709,10 +1728,10 @@ end subroutine atmos_data_type_chksum
                   if (GFS_data(nb)%Sfcprop%oceanfrac(ix) > zero .and.  datar8(i,j) > zorlmin) then
                     tem = 100.0_GFS_kind_phys * min(0.1_GFS_kind_phys, datar8(i,j))
 !                   GFS_data(nb)%Coupling%zorlwav_cpl(ix) = tem
-                    GFS_data(nb)%Sfcprop%zorlo(ix)        = tem
                     GFS_data(nb)%Sfcprop%zorlw(ix)        = tem
+                    GFS_data(nb)%Sfcprop%zorlwav(ix)      = tem
                   else
-                    GFS_data(nb)%Sfcprop%zorlw(ix) = -999.0_GFS_kind_phys
+                    GFS_data(nb)%Sfcprop%zorlwav(ix) = -999.0_GFS_kind_phys
 
                   endif
                 enddo
@@ -1724,7 +1743,7 @@ end subroutine atmos_data_type_chksum
 !--------------------------------
           fldname = 'sea_ice_surface_temperature'
           if (trim(impfield_name) == trim(fldname)) then
-            findex  = QueryFieldList(ImportFieldsList,fldname)
+            findex  = queryImportFields(fldname)
             if (importFieldsValid(findex)) then
 !$omp parallel do default(shared) private(i,j,nb,ix)
               do j=jsc,jec
@@ -1744,7 +1763,7 @@ end subroutine atmos_data_type_chksum
 !--------------------------------------------------------------------------
           fldname = 'sea_surface_temperature'
           if (trim(impfield_name) == trim(fldname)) then
-            findex  = QueryFieldList(ImportFieldsList,fldname)
+            findex  = queryImportFields(fldname)
             if (importFieldsValid(findex)) then
 !$omp parallel do default(shared) private(i,j,nb,ix)
               do j=jsc,jec
@@ -1765,7 +1784,7 @@ end subroutine atmos_data_type_chksum
 !-----------------------------------------------------------------------
           fldname = 'ice_fraction'
           if (trim(impfield_name) == trim(fldname)) then
-            findex  = QueryFieldList(ImportFieldsList,fldname)
+            findex  = queryImportFields(fldname)
             if (importFieldsValid(findex)) then
               lcpl_fice = .true.
 !$omp parallel do default(shared) private(i,j,nb,ix,ofrac)
@@ -1801,7 +1820,7 @@ end subroutine atmos_data_type_chksum
 !----------------------------------------------
           fldname = 'mean_up_lw_flx_ice'
           if (trim(impfield_name) == trim(fldname)) then
-            findex  = QueryFieldList(ImportFieldsList,fldname)
+            findex  = queryImportFields(fldname)
             if (importFieldsValid(findex)) then
 !$omp parallel do default(shared) private(i,j,nb,ix)
               do j=jsc,jec
@@ -1828,7 +1847,7 @@ end subroutine atmos_data_type_chksum
 !------------------------------------------------
           fldname = 'mean_laten_heat_flx_atm_into_ice'
           if (trim(impfield_name) == trim(fldname)) then
-            findex  = QueryFieldList(ImportFieldsList,fldname)
+            findex  = queryImportFields(fldname)
             if (importFieldsValid(findex)) then
 !$omp parallel do default(shared) private(i,j,nb,ix)
               do j=jsc,jec
@@ -1848,7 +1867,7 @@ end subroutine atmos_data_type_chksum
 !--------------------------------------------------
           fldname = 'mean_sensi_heat_flx_atm_into_ice'
           if (trim(impfield_name) == trim(fldname)) then
-            findex  = QueryFieldList(ImportFieldsList,fldname)
+            findex  = queryImportFields(fldname)
             if (importFieldsValid(findex)) then
 !$omp parallel do default(shared) private(i,j,nb,ix)
               do j=jsc,jec
@@ -1868,7 +1887,7 @@ end subroutine atmos_data_type_chksum
 !------------------------------------------------------------
           fldname = 'stress_on_air_ice_zonal'
           if (trim(impfield_name) == trim(fldname)) then
-            findex  = QueryFieldList(ImportFieldsList,fldname)
+            findex  = queryImportFields(fldname)
             if (importFieldsValid(findex)) then
 !$omp parallel do default(shared) private(i,j,nb,ix)
               do j=jsc,jec
@@ -1888,7 +1907,7 @@ end subroutine atmos_data_type_chksum
 !-----------------------------------------------------------------
           fldname = 'stress_on_air_ice_merid'
           if (trim(impfield_name) == trim(fldname)) then
-            findex  = QueryFieldList(ImportFieldsList,fldname)
+            findex  = queryImportFields(fldname)
             if (importFieldsValid(findex)) then
 !$omp parallel do default(shared) private(i,j,nb,ix)
               do j=jsc,jec
@@ -1908,7 +1927,7 @@ end subroutine atmos_data_type_chksum
 !----------------------------------------------
           fldname = 'mean_ice_volume'
           if (trim(impfield_name) == trim(fldname)) then
-            findex  = QueryFieldList(ImportFieldsList,fldname)
+            findex  = queryImportFields(fldname)
             if (importFieldsValid(findex)) then
 !$omp parallel do default(shared) private(i,j,nb,ix)
               do j=jsc,jec
@@ -1929,7 +1948,7 @@ end subroutine atmos_data_type_chksum
 !-------------------------------------------
           fldname = 'mean_snow_volume'
           if (trim(impfield_name) == trim(fldname)) then
-            findex  = QueryFieldList(ImportFieldsList,fldname)
+            findex  = queryImportFields(fldname)
             if (importFieldsValid(findex)) then
 !$omp parallel do default(shared) private(i,j,nb,ix)
               do j=jsc,jec
@@ -1946,6 +1965,385 @@ end subroutine atmos_data_type_chksum
           endif
 
         endif ! if (datar8(isc,jsc) > -99999.0) then
+
+       ! For JEDI
+
+        sphum   = get_tracer_index(MODEL_ATMOS, 'sphum')
+        liq_wat = get_tracer_index(MODEL_ATMOS, 'liq_wat')
+        ice_wat = get_tracer_index(MODEL_ATMOS, 'ice_wat')
+        o3mr    = get_tracer_index(MODEL_ATMOS, 'o3mr')
+
+        fldname = 'u'
+        if (trim(impfield_name) == trim(fldname)) then
+          findex  = queryImportFields(fldname)
+          if (importFieldsValid(findex)) then
+!$omp parallel do default(shared) private(i,j,k)
+            do k=1,nk
+            do j=jsc,jec
+              do i=isc,iec
+                Atm(mygrid)%u(i,j,k) = datar83d(i-isc+1,j-jsc+1,k)
+              enddo
+            enddo
+            enddo
+          endif
+        endif
+
+        fldname = 'v'
+        if (trim(impfield_name) == trim(fldname)) then
+          findex  = queryImportFields(fldname)
+          if (importFieldsValid(findex)) then
+!$omp parallel do default(shared) private(i,j,k)
+            do k=1,nk
+            do j=jsc,jec
+              do i=isc,iec
+                Atm(mygrid)%v(i,j,k) = datar83d(i-isc+1,j-jsc+1,k)
+              enddo
+            enddo
+            enddo
+          endif
+        endif
+
+        fldname = 'ua'
+        if (trim(impfield_name) == trim(fldname)) then
+          findex  = queryImportFields(fldname)
+          if (importFieldsValid(findex)) then
+!$omp parallel do default(shared) private(i,j,k)
+            do k=1,nk
+            do j=jsc,jec
+              do i=isc,iec
+                Atm(mygrid)%ua(i,j,k) = datar83d(i-isc+1,j-jsc+1,k)
+              enddo
+            enddo
+            enddo
+          endif
+        endif
+
+        fldname = 'va'
+        if (trim(impfield_name) == trim(fldname)) then
+          findex  = queryImportFields(fldname)
+          if (importFieldsValid(findex)) then
+!$omp parallel do default(shared) private(i,j,k)
+            do k=1,nk
+            do j=jsc,jec
+              do i=isc,iec
+                Atm(mygrid)%va(i,j,k) = datar83d(i-isc+1,j-jsc+1,k)
+              enddo
+            enddo
+            enddo
+          endif
+        endif
+
+        fldname = 't'
+        if (trim(impfield_name) == trim(fldname)) then
+          findex  = queryImportFields(fldname)
+          if (importFieldsValid(findex)) then
+!$omp parallel do default(shared) private(i,j,k)
+            do k=1,nk
+            do j=jsc,jec
+              do i=isc,iec
+                Atm(mygrid)%pt(i,j,k) = datar83d(i-isc+1,j-jsc+1,k)
+              enddo
+            enddo
+            enddo
+          endif
+        endif
+
+        fldname = 'delp'
+        if (trim(impfield_name) == trim(fldname)) then
+          findex  = queryImportFields(fldname)
+          if (importFieldsValid(findex)) then
+!$omp parallel do default(shared) private(i,j,k)
+            do k=1,nk
+            do j=jsc,jec
+              do i=isc,iec
+                Atm(mygrid)%delp(i,j,k) = datar83d(i-isc+1,j-jsc+1,k)
+              enddo
+            enddo
+            enddo
+          endif
+        endif
+
+        fldname = 'sphum'
+        if (trim(impfield_name) == trim(fldname) .and. sphum > 0) then
+          findex  = queryImportFields(fldname)
+          if (importFieldsValid(findex)) then
+!$omp parallel do default(shared) private(i,j,k)
+            do k=1,nk
+            do j=jsc,jec
+              do i=isc,iec
+                Atm(mygrid)%q(i,j,k,sphum) = datar83d(i-isc+1,j-jsc+1,k)
+              enddo
+            enddo
+            enddo
+          endif
+        endif
+
+        fldname = 'ice_wat'
+        if (trim(impfield_name) == trim(fldname) .and. ice_wat > 0) then
+          findex  = queryImportFields(fldname)
+          if (importFieldsValid(findex)) then
+!$omp parallel do default(shared) private(i,j,k)
+            do k=1,nk
+            do j=jsc,jec
+              do i=isc,iec
+                Atm(mygrid)%q(i,j,k,ice_wat) = datar83d(i-isc+1,j-jsc+1,k)
+              enddo
+            enddo
+            enddo
+          endif
+        endif
+
+        fldname = 'liq_wat'
+        if (trim(impfield_name) == trim(fldname) .and. liq_wat > 0) then
+          findex  = queryImportFields(fldname)
+          if (importFieldsValid(findex)) then
+!$omp parallel do default(shared) private(i,j,k)
+            do k=1,nk
+            do j=jsc,jec
+              do i=isc,iec
+                Atm(mygrid)%q(i,j,k,sphum) = datar83d(i-isc+1,j-jsc+1,k)
+              enddo
+            enddo
+            enddo
+          endif
+        endif
+
+        fldname = 'o3mr'
+        if (trim(impfield_name) == trim(fldname) .and. o3mr > 0) then
+          findex  = queryImportFields(fldname)
+          if (importFieldsValid(findex)) then
+!$omp parallel do default(shared) private(i,j,k)
+            do k=1,nk
+            do j=jsc,jec
+              do i=isc,iec
+                Atm(mygrid)%q(i,j,k,o3mr) = datar83d(i-isc+1,j-jsc+1,k)
+              enddo
+            enddo
+            enddo
+          endif
+        endif
+
+        fldname = 'phis'
+        if (trim(impfield_name) == trim(fldname)) then
+          findex  = queryImportFields(fldname)
+          if (importFieldsValid(findex)) then
+!$omp parallel do default(shared) private(i,j)
+            do j=jsc,jec
+              do i=isc,iec
+                Atm(mygrid)%phis(i,j) = datar82d(i-isc+1,j-jsc+1)
+              enddo
+            enddo
+          endif
+        endif
+
+        fldname = 'u_srf'
+        if (trim(impfield_name) == trim(fldname)) then
+          findex  = queryImportFields(fldname)
+          if (importFieldsValid(findex)) then
+!$omp parallel do default(shared) private(i,j)
+            do j=jsc,jec
+              do i=isc,iec
+                Atm(mygrid)%u_srf(i,j) = datar82d(i-isc+1,j-jsc+1)
+              enddo
+            enddo
+          endif
+        endif
+
+        fldname = 'v_srf'
+        if (trim(impfield_name) == trim(fldname)) then
+          findex  = queryImportFields(fldname)
+          if (importFieldsValid(findex)) then
+!$omp parallel do default(shared) private(i,j)
+            do j=jsc,jec
+              do i=isc,iec
+                Atm(mygrid)%v_srf(i,j) = datar82d(i-isc+1,j-jsc+1)
+              enddo
+            enddo
+          endif
+        endif
+
+        ! physics
+        fldname = 'slmsk'
+        if (trim(impfield_name) == trim(fldname)) then
+          findex  = queryImportFields(fldname)
+          if (importFieldsValid(findex)) then
+!$omp parallel do default(shared) private(i,j,nb,ix)
+            do j=jsc,jec
+              do i=isc,iec
+                nb = Atm_block%blkno(i,j)
+                ix = Atm_block%ixp(i,j)
+                GFS_data(nb)%Sfcprop%slmsk(ix) = datar82d(i-isc+1,j-jsc+1)
+              enddo
+            enddo
+          endif
+        endif
+
+        fldname = 'weasd'
+        if (trim(impfield_name) == trim(fldname)) then
+          findex  = queryImportFields(fldname)
+          if (importFieldsValid(findex)) then
+!$omp parallel do default(shared) private(i,j,nb,ix)
+            do j=jsc,jec
+              do i=isc,iec
+                nb = Atm_block%blkno(i,j)
+                ix = Atm_block%ixp(i,j)
+                GFS_data(nb)%Sfcprop%weasd(ix) = datar82d(i-isc+1,j-jsc+1)
+              enddo
+            enddo
+          endif
+        endif
+
+        fldname = 'tsea'
+        if (trim(impfield_name) == trim(fldname)) then
+          findex  = queryImportFields(fldname)
+          if (importFieldsValid(findex)) then
+!$omp parallel do default(shared) private(i,j,nb,ix)
+            do j=jsc,jec
+              do i=isc,iec
+                nb = Atm_block%blkno(i,j)
+                ix = Atm_block%ixp(i,j)
+                GFS_data(nb)%Sfcprop%tsfco(ix) = datar82d(i-isc+1,j-jsc+1)
+              enddo
+            enddo
+          endif
+        endif
+
+        fldname = 'vtype'
+        if (trim(impfield_name) == trim(fldname)) then
+          findex  = queryImportFields(fldname)
+          if (importFieldsValid(findex)) then
+!$omp parallel do default(shared) private(i,j,nb,ix)
+            do j=jsc,jec
+              do i=isc,iec
+                nb = Atm_block%blkno(i,j)
+                ix = Atm_block%ixp(i,j)
+                GFS_data(nb)%Sfcprop%vtype(ix) = datar82d(i-isc+1,j-jsc+1)
+              enddo
+            enddo
+          endif
+        endif
+
+        fldname = 'stype'
+        if (trim(impfield_name) == trim(fldname)) then
+          findex  = queryImportFields(fldname)
+          if (importFieldsValid(findex)) then
+!$omp parallel do default(shared) private(i,j,nb,ix)
+            do j=jsc,jec
+              do i=isc,iec
+                nb = Atm_block%blkno(i,j)
+                ix = Atm_block%ixp(i,j)
+                GFS_data(nb)%Sfcprop%stype(ix) = datar82d(i-isc+1,j-jsc+1)
+              enddo
+            enddo
+          endif
+        endif
+
+        fldname = 'vfrac'
+        if (trim(impfield_name) == trim(fldname)) then
+          findex  = queryImportFields(fldname)
+          if (importFieldsValid(findex)) then
+!$omp parallel do default(shared) private(i,j,nb,ix)
+            do j=jsc,jec
+              do i=isc,iec
+                nb = Atm_block%blkno(i,j)
+                ix = Atm_block%ixp(i,j)
+                GFS_data(nb)%Sfcprop%vfrac(ix) = datar82d(i-isc+1,j-jsc+1)
+              enddo
+            enddo
+          endif
+        endif
+
+        fldname = 'stc'
+        if (trim(impfield_name) == trim(fldname)) then
+          findex  = queryImportFields(fldname)
+          if (importFieldsValid(findex)) then
+!$omp parallel do default(shared) private(i,j,nb,ix)
+            do j=jsc,jec
+              do i=isc,iec
+                nb = Atm_block%blkno(i,j)
+                ix = Atm_block%ixp(i,j)
+                GFS_data(nb)%Sfcprop%stc(ix,:) = datar83d(i-isc+1,j-jsc+1,:)
+              enddo
+            enddo
+          endif
+        endif
+
+        fldname = 'smc'
+        if (trim(impfield_name) == trim(fldname)) then
+          findex  = queryImportFields(fldname)
+          if (importFieldsValid(findex)) then
+!$omp parallel do default(shared) private(i,j,nb,ix)
+            do j=jsc,jec
+              do i=isc,iec
+                nb = Atm_block%blkno(i,j)
+                ix = Atm_block%ixp(i,j)
+                GFS_data(nb)%Sfcprop%smc(ix,:) = datar83d(i-isc+1,j-jsc+1,:)
+              enddo
+            enddo
+          endif
+        endif
+
+        fldname = 'snwdph'
+        if (trim(impfield_name) == trim(fldname)) then
+          findex  = queryImportFields(fldname)
+          if (importFieldsValid(findex)) then
+!$omp parallel do default(shared) private(i,j,nb,ix)
+            do j=jsc,jec
+              do i=isc,iec
+                nb = Atm_block%blkno(i,j)
+                ix = Atm_block%ixp(i,j)
+                GFS_data(nb)%Sfcprop%snowd(ix) = datar82d(i-isc+1,j-jsc+1)
+              enddo
+            enddo
+          endif
+        endif
+
+        fldname = 'f10m'
+        if (trim(impfield_name) == trim(fldname)) then
+          findex  = queryImportFields(fldname)
+          if (importFieldsValid(findex)) then
+!$omp parallel do default(shared) private(i,j,nb,ix)
+            do j=jsc,jec
+              do i=isc,iec
+                nb = Atm_block%blkno(i,j)
+                ix = Atm_block%ixp(i,j)
+                GFS_data(nb)%Sfcprop%f10m(ix) = datar82d(i-isc+1,j-jsc+1)
+              enddo
+            enddo
+          endif
+        endif
+
+        fldname = 'zorl'
+        if (trim(impfield_name) == trim(fldname)) then
+          findex  = queryImportFields(fldname)
+          if (importFieldsValid(findex)) then
+!$omp parallel do default(shared) private(i,j,nb,ix)
+            do j=jsc,jec
+              do i=isc,iec
+                nb = Atm_block%blkno(i,j)
+                ix = Atm_block%ixp(i,j)
+                GFS_data(nb)%Sfcprop%zorl(ix) = datar82d(i-isc+1,j-jsc+1)
+              enddo
+            enddo
+          endif
+        endif
+
+        fldname = 't2m'
+        if (trim(impfield_name) == trim(fldname)) then
+          findex  = queryImportFields(fldname)
+          if (importFieldsValid(findex)) then
+!$omp parallel do default(shared) private(i,j,nb,ix)
+            do j=jsc,jec
+              do i=isc,iec
+                nb = Atm_block%blkno(i,j)
+                ix = Atm_block%ixp(i,j)
+                GFS_data(nb)%Sfcprop%t2m(ix) = datar82d(i-isc+1,j-jsc+1)
+              enddo
+            enddo
+          endif
+        endif
+
+        endif ! if (found) then
       endif   ! if (isFieldCreated) then
     enddo
 !
@@ -2020,577 +2418,561 @@ end subroutine atmos_data_type_chksum
   end subroutine assign_importdata
 
 !
-  subroutine setup_exportdata (rc)
+  subroutine setup_exportdata()
 
-    use module_cplfields,  only: exportData, nExportFields, exportFieldsList, &
-                                 queryFieldList, fillExportFields
+    use ESMF
 
-    implicit none
-
-!------------------------------------------------------------------------------
-
-    !--- interface variables
-    integer, intent(out) :: rc
+    use module_cplfields, only: exportFields
 
     !--- local variables
-    integer                :: j, i, ix, nb, isc, iec, jsc, jec, idx
+    integer                :: j, i, k, ix, nb, nk, isc, iec, jsc, jec, idx
+    integer                :: sphum, liq_wat, ice_wat, o3mr
     real(GFS_kind_phys)    :: rtime, rtimek
-!
-    if (mpp_pe() == mpp_root_pe()) print *,'enter setup_exportdata'
 
-    isc = GFS_control%isc
-    iec = GFS_control%isc+GFS_control%nx-1
-    jsc = GFS_control%jsc
-    jec = GFS_control%jsc+GFS_control%ny-1
+    integer                                     :: localrc, rc
+    integer                                     :: n,dimCount
+    logical                                     :: isCreated
+    type(ESMF_TypeKind_Flag)                    :: datatype
+    character(len=ESMF_MAXSTR)                  :: fieldName
+    real(kind=ESMF_KIND_R4), dimension(:,:), pointer   :: datar42d
+    real(kind=ESMF_KIND_R8), dimension(:,:), pointer   :: datar82d
+    real(kind=ESMF_KIND_R8), dimension(:,:,:), pointer :: datar83d
+
+    isc = Atm_block%isc
+    iec = Atm_block%iec
+    jsc = Atm_block%jsc
+    jec = Atm_block%jec
+    nk  = Atm_block%npz
 
     rtime  = one / GFS_control%dtp
     rtimek = GFS_control%rho_h2o * rtime
-!    print *,'in cplExp,dim=',isc,iec,jsc,jec,'nExportFields=',nExportFields
-!    print *,'in cplExp,GFS_data, size', size(GFS_data)
-!    print *,'in cplExp,u10micpl, size', size(GFS_data(1)%coupling%u10mi_cpl)
 
-    if(.not.allocated(exportData)) then
-      allocate(exportData(isc:iec,jsc:jec,nExportFields))
-    endif
+    do n=1, size(exportFields)
 
-    ! set cpl fields to export Data
+      datar42d => null()
+      datar82d => null()
+      datar83d => null()
 
-    if (GFS_control%cplflx .or. GFS_control%cplwav) then
+      isCreated = ESMF_FieldIsCreated(exportFields(n), rc=localrc)
+      if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
+      if (.not. isCreated) cycle
+
+      call ESMF_FieldGet(exportFields(n), name=fieldname, dimCount=dimCount, typekind=datatype, rc=localrc)
+      if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
+      if (datatype == ESMF_TYPEKIND_R8) then
+         if (dimCount == 2) then
+           call ESMF_FieldGet(exportFields(n),farrayPtr=datar82d,localDE=0, rc=localrc)
+           if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
+         else if (dimCount == 3) then
+           call ESMF_FieldGet(exportFields(n),farrayPtr=datar83d,localDE=0, rc=localrc)
+           if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
+         else
+            write(0,*)'not implemented dimCount ',dimCount, trim(fieldname)
+            call ESMF_Finalize(endflag=ESMF_END_ABORT)
+         endif
+      else if (datatype == ESMF_TYPEKIND_R4) then
+         if (dimCount == 2) then
+           call ESMF_FieldGet(exportFields(n),farrayPtr=datar42d,localDE=0, rc=localrc)
+           if (ESMF_LogFoundError(rcToCheck=localrc, msg=ESMF_LOGERR_PASSTHRU, line=__LINE__, file=__FILE__, rcToReturn=rc)) return
+         else
+            write(0,*)'not implemented dimCount ',dimCount, trim(fieldname)
+            call ESMF_Finalize(endflag=ESMF_END_ABORT)
+         endif
+      else
+         write(0,*) 'not implemented datatype ',datatype, trim(fieldname)
+         call ESMF_Finalize(endflag=ESMF_END_ABORT)
+      endif
+
+
+
     ! Instantaneous u wind (m/s) 10 m above ground
-    idx = queryfieldlist(exportFieldsList,'inst_zonal_wind_height10m')
-    if (idx > 0 ) then
-      if (mpp_pe() == mpp_root_pe() .and. debug) print *,'cpl, in get u10mi_cpl'
+    if (trim(fieldname) == 'inst_zonal_wind_height10m') then
 !$omp parallel do default(shared) private(i,j,nb,ix)
       do j=jsc,jec
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
           ix = Atm_block%ixp(i,j)
-          exportData(i,j,idx) = GFS_data(nb)%coupling%u10mi_cpl(ix)
+          datar82d(i-isc+1,j-jsc+1) = GFS_data(nb)%coupling%u10mi_cpl(ix)
         enddo
       enddo
     endif
 
     ! Instantaneous v wind (m/s) 10 m above ground
-    idx = queryfieldlist(exportFieldsList,'inst_merid_wind_height10m')
-    if (idx > 0 ) then
-      if (mpp_pe() == mpp_root_pe() .and. debug) print *,'cpl, in get v10mi_cpl'
+    if (trim(fieldname) == 'inst_merid_wind_height10m') then
 !$omp parallel do default(shared) private(i,j,nb,ix)
       do j=jsc,jec
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
           ix = Atm_block%ixp(i,j)
-          exportData(i,j,idx) = GFS_data(nb)%coupling%v10mi_cpl(ix)
+          datar82d(i-isc+1,j-jsc+1) = GFS_data(nb)%coupling%v10mi_cpl(ix)
         enddo
       enddo
-      if (mpp_pe() == mpp_root_pe() .and. debug) print *,'cpl, get v10mi_cpl, exportData=',exportData(isc,jsc,idx),'idx=',idx
     endif
 
-    endif !if cplflx or cplwav
-
-    if (GFS_control%cplflx) then
     ! MEAN Zonal compt of momentum flux (N/m**2)
-    idx = queryfieldlist(exportFieldsList,'mean_zonal_moment_flx_atm')
-    if (idx > 0 ) then
+    if (trim(fieldname) == 'mean_zonal_moment_flx_atm') then
 !$omp parallel do default(shared) private(i,j,nb,ix)
       do j=jsc,jec
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
           ix = Atm_block%ixp(i,j)
-          exportData(i,j,idx) = GFS_data(nb)%coupling%dusfc_cpl(ix) * rtime
+          datar82d(i-isc+1,j-jsc+1) = GFS_data(nb)%coupling%dusfc_cpl(ix) * rtime
         enddo
       enddo
     endif
 
     ! MEAN Merid compt of momentum flux (N/m**2)
-    idx = queryfieldlist(exportFieldsList,'mean_merid_moment_flx_atm')
-    if (idx > 0 ) then
+    if (trim(fieldname) == 'mean_merid_moment_flx_atm') then
 !$omp parallel do default(shared) private(i,j,nb,ix)
       do j=jsc,jec
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
           ix = Atm_block%ixp(i,j)
-          exportData(i,j,idx) = GFS_data(nb)%coupling%dvsfc_cpl(ix) * rtime
+          datar82d(i-isc+1,j-jsc+1) = GFS_data(nb)%coupling%dvsfc_cpl(ix) * rtime
         enddo
       enddo
     endif
 
     ! MEAN Sensible heat flux (W/m**2)
-    idx = queryfieldlist(exportFieldsList,'mean_sensi_heat_flx')
-    if (idx > 0 ) then
+    if (trim(fieldname) == 'mean_sensi_heat_flx') then
 !$omp parallel do default(shared) private(i,j,nb,ix)
       do j=jsc,jec
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
           ix = Atm_block%ixp(i,j)
-          exportData(i,j,idx) = GFS_data(nb)%coupling%dtsfc_cpl(ix) * rtime
+          datar82d(i-isc+1,j-jsc+1) = GFS_data(nb)%coupling%dtsfc_cpl(ix) * rtime
         enddo
       enddo
     endif
 
     ! MEAN Latent heat flux (W/m**2)
-    idx = queryfieldlist(exportFieldsList,'mean_laten_heat_flx')
-    if (idx > 0 ) then
+    if (trim(fieldname) == 'mean_laten_heat_flx') then
 !$omp parallel do default(shared) private(i,j,nb,ix)
       do j=jsc,jec
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
           ix = Atm_block%ixp(i,j)
-          exportData(i,j,idx) = GFS_data(nb)%coupling%dqsfc_cpl(ix) * rtime
+          datar82d(i-isc+1,j-jsc+1) = GFS_data(nb)%coupling%dqsfc_cpl(ix) * rtime
         enddo
       enddo
     endif
 
     ! MEAN Downward LW heat flux (W/m**2)
-    idx = queryfieldlist(exportFieldsList,'mean_down_lw_flx')
-    if (idx > 0 ) then
+    if (trim(fieldname) == 'mean_down_lw_flx') then
 !$omp parallel do default(shared) private(i,j,nb,ix)
       do j=jsc,jec
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
           ix = Atm_block%ixp(i,j)
-          exportData(i,j,idx) = GFS_data(nb)%coupling%dlwsfc_cpl(ix) * rtime
+          datar82d(i-isc+1,j-jsc+1) = GFS_data(nb)%coupling%dlwsfc_cpl(ix) * rtime
         enddo
       enddo
     endif
 
     ! MEAN Downward SW heat flux (W/m**2)
-    idx = queryfieldlist(exportFieldsList,'mean_down_sw_flx')
-    if (idx > 0 ) then
+    if (trim(fieldname) == 'mean_down_sw_flx') then
 !$omp parallel do default(shared) private(i,j,nb,ix)
       do j=jsc,jec
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
           ix = Atm_block%ixp(i,j)
-          exportData(i,j,idx) = GFS_data(nb)%coupling%dswsfc_cpl(ix) * rtime
+          datar82d(i-isc+1,j-jsc+1) = GFS_data(nb)%coupling%dswsfc_cpl(ix) * rtime
         enddo
       enddo
     endif
 
     ! MEAN precipitation rate (kg/m2/s)
-    idx = queryfieldlist(exportFieldsList,'mean_prec_rate')
-    if (idx > 0 ) then
+    if (trim(fieldname) == 'mean_prec_rate') then
 !$omp parallel do default(shared) private(i,j,nb,ix)
       do j=jsc,jec
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
           ix = Atm_block%ixp(i,j)
-          exportData(i,j,idx) = GFS_data(nb)%coupling%rain_cpl(ix) * rtimek
+          datar82d(i-isc+1,j-jsc+1) = GFS_data(nb)%coupling%rain_cpl(ix) * rtimek
         enddo
       enddo
     endif
 
     ! Instataneous Zonal compt of momentum flux (N/m**2)
-    idx = queryfieldlist(exportFieldsList,'inst_zonal_moment_flx')
-    if (idx > 0 ) then
+    if (trim(fieldname) == 'inst_zonal_moment_flx') then
 !$omp parallel do default(shared) private(i,j,nb,ix)
       do j=jsc,jec
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
           ix = Atm_block%ixp(i,j)
-          exportData(i,j,idx) = GFS_data(nb)%coupling%dusfci_cpl(ix)
+          datar82d(i-isc+1,j-jsc+1) = GFS_data(nb)%coupling%dusfci_cpl(ix)
         enddo
       enddo
     endif
 
     ! Instataneous Merid compt of momentum flux (N/m**2)
-    idx = queryfieldlist(exportFieldsList,'inst_merid_moment_flx')
-    if (idx > 0 ) then
+    if (trim(fieldname) == 'inst_merid_moment_flx') then
 !$omp parallel do default(shared) private(i,j,nb,ix)
       do j=jsc,jec
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
           ix = Atm_block%ixp(i,j)
-          exportData(i,j,idx) = GFS_data(nb)%coupling%dvsfci_cpl(ix)
+          datar82d(i-isc+1,j-jsc+1) = GFS_data(nb)%coupling%dvsfci_cpl(ix)
         enddo
       enddo
     endif
 
     ! Instataneous Sensible heat flux (W/m**2)
-    idx = queryfieldlist(exportFieldsList,'inst_sensi_heat_flx')
-    if (idx > 0 ) then
+    if (trim(fieldname) == 'inst_sensi_heat_flx') then
 !$omp parallel do default(shared) private(i,j,nb,ix)
       do j=jsc,jec
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
           ix = Atm_block%ixp(i,j)
-          exportData(i,j,idx) = GFS_data(nb)%coupling%dtsfci_cpl(ix)
+          datar82d(i-isc+1,j-jsc+1) = GFS_data(nb)%coupling%dtsfci_cpl(ix)
         enddo
       enddo
     endif
 
     ! Instataneous Latent heat flux (W/m**2)
-    idx = queryfieldlist(exportFieldsList,'inst_laten_heat_flx')
-    if (idx > 0 ) then
+    if (trim(fieldname) == 'inst_laten_heat_flx') then
 !$omp parallel do default(shared) private(i,j,nb,ix)
       do j=jsc,jec
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
           ix = Atm_block%ixp(i,j)
-          exportData(i,j,idx) = GFS_data(nb)%coupling%dqsfci_cpl(ix)
+          datar82d(i-isc+1,j-jsc+1) = GFS_data(nb)%coupling%dqsfci_cpl(ix)
         enddo
       enddo
     endif
 
     ! Instataneous Downward long wave radiation flux (W/m**2)
-    idx = queryfieldlist(exportFieldsList,'inst_down_lw_flx')
-    if (idx > 0 ) then
+    if (trim(fieldname) == 'inst_down_lw_flx') then
 !$omp parallel do default(shared) private(i,j,nb,ix)
       do j=jsc,jec
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
           ix = Atm_block%ixp(i,j)
-          exportData(i,j,idx) = GFS_data(nb)%coupling%dlwsfci_cpl(ix)
+          datar82d(i-isc+1,j-jsc+1) = GFS_data(nb)%coupling%dlwsfci_cpl(ix)
         enddo
       enddo
     endif
 
     ! Instataneous Downward solar radiation flux (W/m**2)
-    idx = queryfieldlist(exportFieldsList,'inst_down_sw_flx')
-    if (idx > 0 ) then
+    if (trim(fieldname) == 'inst_down_sw_flx') then
 !$omp parallel do default(shared) private(i,j,nb,ix)
       do j=jsc,jec
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
           ix = Atm_block%ixp(i,j)
-          exportData(i,j,idx) = GFS_data(nb)%coupling%dswsfci_cpl(ix)
+          datar82d(i-isc+1,j-jsc+1) = GFS_data(nb)%coupling%dswsfci_cpl(ix)
         enddo
       enddo
     endif
 
     ! Instataneous Temperature (K) 2 m above ground
-    idx = queryfieldlist(exportFieldsList,'inst_temp_height2m')
-    if (idx > 0 ) then
+    if (trim(fieldname) == 'inst_temp_height2m') then
 !$omp parallel do default(shared) private(i,j,nb,ix)
       do j=jsc,jec
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
           ix = Atm_block%ixp(i,j)
-          exportData(i,j,idx) = GFS_data(nb)%coupling%t2mi_cpl(ix)
+          datar82d(i-isc+1,j-jsc+1) = GFS_data(nb)%coupling%t2mi_cpl(ix)
         enddo
       enddo
     endif
 
     ! Instataneous Specific humidity (kg/kg) 2 m above ground
-    idx = queryfieldlist(exportFieldsList,'inst_spec_humid_height2m')
-    if (idx > 0 ) then
+    if (trim(fieldname) == 'inst_spec_humid_height2m') then
 !$omp parallel do default(shared) private(i,j,nb,ix)
       do j=jsc,jec
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
           ix = Atm_block%ixp(i,j)
-          exportData(i,j,idx) = GFS_data(nb)%coupling%q2mi_cpl(ix)
+          datar82d(i-isc+1,j-jsc+1) = GFS_data(nb)%coupling%q2mi_cpl(ix)
         enddo
       enddo
     endif
 
     ! Instataneous Temperature (K) at surface
-    idx = queryfieldlist(exportFieldsList,'inst_temp_height_surface')
-    if (idx > 0 ) then
+    if (trim(fieldname) == 'inst_temp_height_surface') then
 !$omp parallel do default(shared) private(i,j,nb,ix)
       do j=jsc,jec
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
           ix = Atm_block%ixp(i,j)
-          exportData(i,j,idx) = GFS_data(nb)%coupling%tsfci_cpl(ix)
+          datar82d(i-isc+1,j-jsc+1) = GFS_data(nb)%coupling%tsfci_cpl(ix)
         enddo
       enddo
     endif
 
     ! Instataneous Pressure (Pa) land and sea surface
-    idx = queryfieldlist(exportFieldsList,'inst_pres_height_surface')
-    if (idx > 0 ) then
+    if (trim(fieldname) == 'inst_pres_height_surface') then
 !$omp parallel do default(shared) private(i,j,nb,ix)
       do j=jsc,jec
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
           ix = Atm_block%ixp(i,j)
-          exportData(i,j,idx) = GFS_data(nb)%coupling%psurfi_cpl(ix)
+          datar82d(i-isc+1,j-jsc+1) = GFS_data(nb)%coupling%psurfi_cpl(ix)
         enddo
       enddo
     endif
 
     ! Instataneous Surface height (m)
-    idx = queryfieldlist(exportFieldsList,'inst_surface_height')
-    if (idx > 0 ) then
+    if (trim(fieldname) == 'inst_surface_height') then
 !$omp parallel do default(shared) private(i,j,nb,ix)
       do j=jsc,jec
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
           ix = Atm_block%ixp(i,j)
-          exportData(i,j,idx) = GFS_data(nb)%coupling%oro_cpl(ix)
+          datar82d(i-isc+1,j-jsc+1) = GFS_data(nb)%coupling%oro_cpl(ix)
         enddo
       enddo
     endif
 
     ! MEAN NET long wave radiation flux (W/m**2)
-    idx = queryfieldlist(exportFieldsList,'mean_net_lw_flx')
-    if (idx > 0 ) then
+    if (trim(fieldname) == 'mean_net_lw_flx') then
 !$omp parallel do default(shared) private(i,j,nb,ix)
       do j=jsc,jec
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
           ix = Atm_block%ixp(i,j)
-          exportData(i,j,idx) = GFS_data(nb)%coupling%nlwsfc_cpl(ix) * rtime
+          datar82d(i-isc+1,j-jsc+1) = GFS_data(nb)%coupling%nlwsfc_cpl(ix) * rtime
         enddo
       enddo
     endif
 
     ! MEAN NET solar radiation flux over the ocean (W/m**2)
-    idx = queryfieldlist(exportFieldsList,'mean_net_sw_flx')
-    if (idx > 0 ) then
+    if (trim(fieldname) == 'mean_net_sw_flx') then
 !$omp parallel do default(shared) private(i,j,nb,ix)
       do j=jsc,jec
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
           ix = Atm_block%ixp(i,j)
-          exportData(i,j,idx) = GFS_data(nb)%coupling%nswsfc_cpl(ix) * rtime
+          datar82d(i-isc+1,j-jsc+1) = GFS_data(nb)%coupling%nswsfc_cpl(ix) * rtime
         enddo
       enddo
     endif
 
     ! Instataneous NET long wave radiation flux (W/m**2)
-    idx = queryfieldlist(exportFieldsList,'inst_net_lw_flx')
-    if (idx > 0 ) then
+    if (trim(fieldname) == 'inst_net_lw_flx') then
 !$omp parallel do default(shared) private(i,j,nb,ix)
       do j=jsc,jec
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
           ix = Atm_block%ixp(i,j)
-          exportData(i,j,idx) = GFS_data(nb)%coupling%nlwsfci_cpl(ix)
+          datar82d(i-isc+1,j-jsc+1) = GFS_data(nb)%coupling%nlwsfci_cpl(ix)
         enddo
       enddo
     endif
 
     ! Instataneous NET solar radiation flux over the ocean (W/m**2)
-    idx = queryfieldlist(exportFieldsList,'inst_net_sw_flx')
-    if (idx > 0 ) then
+    if (trim(fieldname) == 'inst_net_sw_flx') then
 !$omp parallel do default(shared) private(i,j,nb,ix)
       do j=jsc,jec
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
           ix = Atm_block%ixp(i,j)
-          exportData(i,j,idx) = GFS_data(nb)%coupling%nswsfci_cpl(ix)
+          datar82d(i-isc+1,j-jsc+1) = GFS_data(nb)%coupling%nswsfci_cpl(ix)
         enddo
       enddo
     endif
 
     ! MEAN sfc downward nir direct flux (W/m**2)
-    idx = queryfieldlist(exportFieldsList,'mean_down_sw_ir_dir_flx')
-    if (idx > 0 ) then
+    if (trim(fieldname) == 'mean_down_sw_ir_dir_flx') then
 !$omp parallel do default(shared) private(i,j,nb,ix)
       do j=jsc,jec
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
           ix = Atm_block%ixp(i,j)
-          exportData(i,j,idx) = GFS_data(nb)%coupling%dnirbm_cpl(ix) * rtime
+          datar82d(i-isc+1,j-jsc+1) = GFS_data(nb)%coupling%dnirbm_cpl(ix) * rtime
         enddo
       enddo
     endif
 
     ! MEAN sfc downward nir diffused flux (W/m**2)
-    idx = queryfieldlist(exportFieldsList,'mean_down_sw_ir_dif_flx')
-    if (idx > 0 ) then
+    if (trim(fieldname) == 'mean_down_sw_ir_dif_flx') then
 !$omp parallel do default(shared) private(i,j,nb,ix)
       do j=jsc,jec
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
           ix = Atm_block%ixp(i,j)
-          exportData(i,j,idx) = GFS_data(nb)%coupling%dnirdf_cpl(ix) * rtime
+          datar82d(i-isc+1,j-jsc+1) = GFS_data(nb)%coupling%dnirdf_cpl(ix) * rtime
         enddo
       enddo
     endif
 
     ! MEAN sfc downward uv+vis direct flux (W/m**2)
-    idx = queryfieldlist(exportFieldsList,'mean_down_sw_vis_dir_flx')
-    if (idx > 0 ) then
+    if (trim(fieldname) == 'mean_down_sw_vis_dir_flx') then
 !$omp parallel do default(shared) private(i,j,nb,ix)
       do j=jsc,jec
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
           ix = Atm_block%ixp(i,j)
-          exportData(i,j,idx) = GFS_data(nb)%coupling%dvisbm_cpl(ix) * rtime
+          datar82d(i-isc+1,j-jsc+1) = GFS_data(nb)%coupling%dvisbm_cpl(ix) * rtime
         enddo
       enddo
     endif
 
     ! MEAN sfc downward uv+vis diffused flux (W/m**2)
-    idx = queryfieldlist(exportFieldsList,'mean_down_sw_vis_dif_flx')
-    if (idx > 0 ) then
+    if (trim(fieldname) == 'mean_down_sw_vis_dif_flx') then
 !$omp parallel do default(shared) private(i,j,nb,ix)
       do j=jsc,jec
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
           ix = Atm_block%ixp(i,j)
-          exportData(i,j,idx) = GFS_data(nb)%coupling%dvisdf_cpl(ix) * rtime
+          datar82d(i-isc+1,j-jsc+1) = GFS_data(nb)%coupling%dvisdf_cpl(ix) * rtime
         enddo
       enddo
     endif
 
     ! Instataneous sfc downward nir direct flux (W/m**2)
-    idx = queryfieldlist(exportFieldsList,'inst_down_sw_ir_dir_flx')
-    if (idx > 0 ) then
+    if (trim(fieldname) == 'inst_down_sw_ir_dir_flx') then
 !$omp parallel do default(shared) private(i,j,nb,ix)
       do j=jsc,jec
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
           ix = Atm_block%ixp(i,j)
-          exportData(i,j,idx) = GFS_data(nb)%coupling%dnirbmi_cpl(ix)
+          datar82d(i-isc+1,j-jsc+1) = GFS_data(nb)%coupling%dnirbmi_cpl(ix)
         enddo
       enddo
     endif
 
     ! Instataneous sfc downward nir diffused flux (W/m**2)
-    idx = queryfieldlist(exportFieldsList,'inst_down_sw_ir_dif_flx')
-    if (idx > 0 ) then
+    if (trim(fieldname) == 'inst_down_sw_ir_dif_flx') then
 !$omp parallel do default(shared) private(i,j,nb,ix)
       do j=jsc,jec
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
           ix = Atm_block%ixp(i,j)
-          exportData(i,j,idx) = GFS_data(nb)%coupling%dnirdfi_cpl(ix)
+          datar82d(i-isc+1,j-jsc+1) = GFS_data(nb)%coupling%dnirdfi_cpl(ix)
         enddo
       enddo
     endif
 
     ! Instataneous sfc downward uv+vis direct flux (W/m**2)
-    idx = queryfieldlist(exportFieldsList,'inst_down_sw_vis_dir_flx')
-    if (idx > 0 ) then
+    if (trim(fieldname) == 'inst_down_sw_vis_dir_flx') then
 !$omp parallel do default(shared) private(i,j,nb,ix)
       do j=jsc,jec
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
           ix = Atm_block%ixp(i,j)
-          exportData(i,j,idx) = GFS_data(nb)%coupling%dvisbmi_cpl(ix)
+          datar82d(i-isc+1,j-jsc+1) = GFS_data(nb)%coupling%dvisbmi_cpl(ix)
         enddo
       enddo
     endif
 
     ! Instataneous sfc downward uv+vis diffused flux (W/m**2)
-    idx = queryfieldlist(exportFieldsList,'inst_down_sw_vis_dif_flx')
-    if (idx > 0 ) then
+    if (trim(fieldname) == 'inst_down_sw_vis_dif_flx') then
 !$omp parallel do default(shared) private(i,j,nb,ix)
       do j=jsc,jec
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
           ix = Atm_block%ixp(i,j)
-          exportData(i,j,idx) = GFS_data(nb)%coupling%dvisdfi_cpl(ix)
+          datar82d(i-isc+1,j-jsc+1) = GFS_data(nb)%coupling%dvisdfi_cpl(ix)
         enddo
       enddo
     endif
 
     ! MEAN NET sfc nir direct flux (W/m**2)
-    idx = queryfieldlist(exportFieldsList,'mean_net_sw_ir_dir_flx')
-    if (idx > 0 ) then
+    if (trim(fieldname) == 'mean_net_sw_ir_dir_flx') then
 !$omp parallel do default(shared) private(i,j,nb,ix)
       do j=jsc,jec
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
           ix = Atm_block%ixp(i,j)
-          exportData(i,j,idx) = GFS_data(nb)%coupling%nnirbm_cpl(ix) * rtime
+          datar82d(i-isc+1,j-jsc+1) = GFS_data(nb)%coupling%nnirbm_cpl(ix) * rtime
         enddo
       enddo
     endif
 
     ! MEAN NET sfc nir diffused flux (W/m**2)
-    idx = queryfieldlist(exportFieldsList,'mean_net_sw_ir_dif_flx')
-    if (idx > 0 ) then
+    if (trim(fieldname) == 'mean_net_sw_ir_dif_flx') then
 !$omp parallel do default(shared) private(i,j,nb,ix)
       do j=jsc,jec
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
           ix = Atm_block%ixp(i,j)
-          exportData(i,j,idx) = GFS_data(nb)%coupling%nnirdf_cpl(ix) * rtime
+          datar82d(i-isc+1,j-jsc+1) = GFS_data(nb)%coupling%nnirdf_cpl(ix) * rtime
         enddo
       enddo
     endif
 
     ! MEAN NET sfc uv+vis direct flux (W/m**2)
-    idx = queryfieldlist(exportFieldsList,'mean_net_sw_vis_dir_flx')
-    if (idx > 0 ) then
+    if (trim(fieldname) == 'mean_net_sw_vis_dir_flx') then
 !$omp parallel do default(shared) private(i,j,nb,ix)
       do j=jsc,jec
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
           ix = Atm_block%ixp(i,j)
-          exportData(i,j,idx) = GFS_data(nb)%coupling%nvisbm_cpl(ix) * rtime
+          datar82d(i-isc+1,j-jsc+1) = GFS_data(nb)%coupling%nvisbm_cpl(ix) * rtime
         enddo
       enddo
     endif
 
     ! MEAN NET sfc uv+vis diffused flux (W/m**2)
-    idx = queryfieldlist(exportFieldsList,'mean_net_sw_vis_dif_flx')
-    if (idx > 0 ) then
+    if (trim(fieldname) == 'mean_net_sw_vis_dif_flx') then
 !$omp parallel do default(shared) private(i,j,nb,ix)
       do j=jsc,jec
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
           ix = Atm_block%ixp(i,j)
-          exportData(i,j,idx) = GFS_data(nb)%coupling%nvisdf_cpl(ix) * rtime
+          datar82d(i-isc+1,j-jsc+1) = GFS_data(nb)%coupling%nvisdf_cpl(ix) * rtime
         enddo
       enddo
     endif
 
     ! Instataneous net sfc nir direct flux (W/m**2)
-    idx = queryfieldlist(exportFieldsList,'inst_net_sw_ir_dir_flx')
-    if (idx > 0 ) then
+    if (trim(fieldname) == 'inst_net_sw_ir_dir_flx') then
 !$omp parallel do default(shared) private(i,j,nb,ix)
       do j=jsc,jec
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
           ix = Atm_block%ixp(i,j)
-          exportData(i,j,idx) = GFS_data(nb)%coupling%nnirbmi_cpl(ix)
+          datar82d(i-isc+1,j-jsc+1) = GFS_data(nb)%coupling%nnirbmi_cpl(ix)
         enddo
       enddo
     endif
 
     ! Instataneous net sfc nir diffused flux (W/m**2)
-    idx = queryfieldlist(exportFieldsList,'inst_net_sw_ir_dif_flx')
-    if (idx > 0 ) then
+    if (trim(fieldname) == 'inst_net_sw_ir_dif_flx') then
 !$omp parallel do default(shared) private(i,j,nb,ix)
       do j=jsc,jec
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
           ix = Atm_block%ixp(i,j)
-          exportData(i,j,idx) = GFS_data(nb)%coupling%nnirdfi_cpl(ix)
+          datar82d(i-isc+1,j-jsc+1) = GFS_data(nb)%coupling%nnirdfi_cpl(ix)
         enddo
       enddo
     endif
 
     ! Instataneous net sfc uv+vis direct flux (W/m**2)
-    idx = queryfieldlist(exportFieldsList,'inst_net_sw_vis_dir_flx')
-    if (idx > 0 ) then
+    if (trim(fieldname) == 'inst_net_sw_vis_dir_flx') then
 !$omp parallel do default(shared) private(i,j,nb,ix)
       do j=jsc,jec
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
           ix = Atm_block%ixp(i,j)
-          exportData(i,j,idx) = GFS_data(nb)%coupling%nvisbmi_cpl(ix)
+          datar82d(i-isc+1,j-jsc+1) = GFS_data(nb)%coupling%nvisbmi_cpl(ix)
         enddo
       enddo
     endif
 
     ! Instataneous net sfc uv+vis diffused flux (W/m**2)
-    idx = queryfieldlist(exportFieldsList,'inst_net_sw_vis_dif_flx')
-    if (idx > 0 ) then
+    if (trim(fieldname) == 'inst_net_sw_vis_dif_flx') then
 !$omp parallel do default(shared) private(i,j,nb,ix)
       do j=jsc,jec
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
           ix = Atm_block%ixp(i,j)
-          exportData(i,j,idx) = GFS_data(nb)%coupling%nvisdfi_cpl(ix)
+          datar82d(i-isc+1,j-jsc+1) = GFS_data(nb)%coupling%nvisdfi_cpl(ix)
         enddo
       enddo
     endif
 
     ! Land/Sea mask (sea:0,land:1)
-    idx = queryfieldlist(exportFieldsList,'inst_land_sea_mask')
-    if (idx > 0 ) then
+    if (trim(fieldname) == 'inst_land_sea_mask') then
 !$omp parallel do default(shared) private(i,j,nb,ix)
       do j=jsc,jec
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
           ix = Atm_block%ixp(i,j)
-          exportData(i,j,idx) = GFS_data(nb)%coupling%slmsk_cpl(ix)
+          datar82d(i-isc+1,j-jsc+1) = GFS_data(nb)%coupling%slmsk_cpl(ix)
         enddo
       enddo
     endif
@@ -2598,105 +2980,97 @@ end subroutine atmos_data_type_chksum
 ! Data from DYCORE:
 
     ! bottom layer temperature (t)
-    idx = queryfieldlist(exportFieldsList,'inst_temp_height_lowest')
-    if (mpp_pe() == mpp_root_pe()) print *,'cpl, in get inst_temp_height_lowest'
-    if (idx > 0 ) then
+    if (trim(fieldname) == 'inst_temp_height_lowest') then
 !$omp parallel do default(shared) private(i,j,nb,ix)
       do j=jsc,jec
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
           ix = Atm_block%ixp(i,j)
           if (associated(DYCORE_Data(nb)%coupling%t_bot)) then
-            exportData(i,j,idx) = DYCORE_Data(nb)%coupling%t_bot(ix)
+            datar82d(i-isc+1,j-jsc+1) = DYCORE_Data(nb)%coupling%t_bot(ix)
           else
-            exportData(i,j,idx) = zero
+            datar82d(i-isc+1,j-jsc+1) = zero
           endif
         enddo
       enddo
-    if (mpp_pe() == mpp_root_pe()) print *,'cpl, in get inst_temp_height_lowest=',exportData(isc,jsc,idx)
     endif
 
     ! bottom layer specific humidity (q)
     !!! CHECK if tracer 1 is for specific humidity !!!
-    idx = queryfieldlist(exportFieldsList,'inst_spec_humid_height_lowest')
-    if (idx > 0 ) then
+    if (trim(fieldname) == 'inst_spec_humid_height_lowest') then
 !$omp parallel do default(shared) private(i,j,nb,ix)
       do j=jsc,jec
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
           ix = Atm_block%ixp(i,j)
           if (associated(DYCORE_Data(nb)%coupling%tr_bot)) then
-            exportData(i,j,idx) = DYCORE_Data(nb)%coupling%tr_bot(ix,1)
+            datar82d(i-isc+1,j-jsc+1) = DYCORE_Data(nb)%coupling%tr_bot(ix,1)
           else
-            exportData(i,j,idx) = zero
+            datar82d(i-isc+1,j-jsc+1) = zero
           endif
         enddo
       enddo
     endif
 
     ! bottom layer zonal wind (u)
-    idx = queryfieldlist(exportFieldsList,'inst_zonal_wind_height_lowest')
-    if (idx > 0 ) then
+    if (trim(fieldname) == 'inst_zonal_wind_height_lowest') then
 !$omp parallel do default(shared) private(i,j,nb,ix)
       do j=jsc,jec
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
           ix = Atm_block%ixp(i,j)
           if (associated(DYCORE_Data(nb)%coupling%u_bot)) then
-            exportData(i,j,idx) = DYCORE_Data(nb)%coupling%u_bot(ix)
+            datar82d(i-isc+1,j-jsc+1) = DYCORE_Data(nb)%coupling%u_bot(ix)
           else
-            exportData(i,j,idx) = zero
+            datar82d(i-isc+1,j-jsc+1) = zero
           endif
         enddo
       enddo
     endif
 
     ! bottom layer meridionalw wind (v)
-    idx = queryfieldlist(exportFieldsList,'inst_merid_wind_height_lowest')
-    if (idx > 0 ) then
+    if (trim(fieldname) == 'inst_merid_wind_height_lowest') then
 !$omp parallel do default(shared) private(i,j,nb,ix)
       do j=jsc,jec
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
           ix = Atm_block%ixp(i,j)
           if (associated(DYCORE_Data(nb)%coupling%v_bot)) then
-            exportData(i,j,idx) = DYCORE_Data(nb)%coupling%v_bot(ix)
+            datar82d(i-isc+1,j-jsc+1) = DYCORE_Data(nb)%coupling%v_bot(ix)
           else
-            exportData(i,j,idx) = zero
+            datar82d(i-isc+1,j-jsc+1) = zero
           endif
         enddo
       enddo
     endif
 
     ! bottom layer pressure (p)
-    idx = queryfieldlist(exportFieldsList,'inst_pres_height_lowest')
-    if (idx > 0 ) then
+    if (trim(fieldname) == 'inst_pres_height_lowest') then
 !$omp parallel do default(shared) private(i,j,nb,ix)
       do j=jsc,jec
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
           ix = Atm_block%ixp(i,j)
           if (associated(DYCORE_Data(nb)%coupling%p_bot)) then
-            exportData(i,j,idx) = DYCORE_Data(nb)%coupling%p_bot(ix)
+            datar82d(i-isc+1,j-jsc+1) = DYCORE_Data(nb)%coupling%p_bot(ix)
           else
-            exportData(i,j,idx) = zero
+            datar82d(i-isc+1,j-jsc+1) = zero
           endif
         enddo
       enddo
     endif
 
     ! bottom layer height (z)
-    idx = queryfieldlist(exportFieldsList,'inst_height_lowest')
-    if (idx > 0 ) then
+    if (trim(fieldname) == 'inst_height_lowest') then
 !$omp parallel do default(shared) private(i,j,nb,ix)
       do j=jsc,jec
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
           ix = Atm_block%ixp(i,j)
           if (associated(DYCORE_Data(nb)%coupling%z_bot)) then
-            exportData(i,j,idx) = DYCORE_Data(nb)%coupling%z_bot(ix)
+            datar82d(i-isc+1,j-jsc+1) = DYCORE_Data(nb)%coupling%z_bot(ix)
           else
-            exportData(i,j,idx) = zero
+            datar82d(i-isc+1,j-jsc+1) = zero
           endif
         enddo
       enddo
@@ -2705,22 +3079,307 @@ end subroutine atmos_data_type_chksum
 ! END Data from DYCORE.
 
     ! MEAN snow precipitation rate (kg/m2/s)
-    idx = queryfieldlist(exportFieldsList,'mean_fprec_rate')
-    if (idx > 0 ) then
+    if (trim(fieldname) == 'mean_fprec_rate') then
 !$omp parallel do default(shared) private(i,j,nb,ix)
       do j=jsc,jec
         do i=isc,iec
           nb = Atm_block%blkno(i,j)
           ix = Atm_block%ixp(i,j)
-          exportData(i,j,idx) = GFS_data(nb)%coupling%snow_cpl(ix) * rtimek
+          datar82d(i-isc+1,j-jsc+1) = GFS_data(nb)%coupling%snow_cpl(ix) * rtimek
         enddo
       enddo
     endif
-    endif !cplflx
 
-!---
-! Fill the export Fields for ESMF/NUOPC style coupling
-    call fillExportFields(exportData)
+   ! oceanfrac used by atm to calculate fluxes
+    if (trim(fieldname) == 'openwater_frac_in_atm') then
+!$omp parallel do default(shared) private(i,j,nb,ix)
+      do j=jsc,jec
+        do i=isc,iec
+          nb = Atm_block%blkno(i,j)
+          ix = Atm_block%ixp(i,j)
+          datar82d(i-isc+1,j-jsc+1) = (one - GFS_Data(nb)%Sfcprop%fice(ix))*GFS_Data(nb)%Sfcprop%oceanfrac(ix)
+        enddo
+      enddo
+    endif
+
+   ! For JEDI
+
+    sphum   = get_tracer_index(MODEL_ATMOS, 'sphum')
+    liq_wat = get_tracer_index(MODEL_ATMOS, 'liq_wat')
+    ice_wat = get_tracer_index(MODEL_ATMOS, 'ice_wat')
+    o3mr    = get_tracer_index(MODEL_ATMOS, 'o3mr')
+
+    if (trim(fieldname) == 'u') then
+!$omp parallel do default(shared) private(i,j,k)
+      do k = 1, nk
+      do j=jsc,jec
+        do i=isc,iec
+          datar83d(i-isc+1,j-jsc+1,k) = Atm(mygrid)%u(i,j,k)
+        enddo
+      enddo
+      enddo
+    endif
+
+    if (trim(fieldname) == 'v') then
+!$omp parallel do default(shared) private(i,j,k)
+      do k = 1, nk
+      do j=jsc,jec
+        do i=isc,iec
+          datar83d(i-isc+1,j-jsc+1,k) = Atm(mygrid)%v(i,j,k)
+        enddo
+      enddo
+      enddo
+    endif
+
+    if (trim(fieldname) == 'ua') then
+!$omp parallel do default(shared) private(i,j,k,nb,ix)
+      do k = 1, nk
+      do j=jsc,jec
+        do i=isc,iec
+          datar83d(i-isc+1,j-jsc+1,k) = Atm(mygrid)%ua(i,j,k)
+        enddo
+      enddo
+      enddo
+    endif
+
+    if (trim(fieldname) == 'va') then
+!$omp parallel do default(shared) private(i,j,k)
+      do k = 1, nk
+      do j=jsc,jec
+        do i=isc,iec
+          datar83d(i-isc+1,j-jsc+1,k) = Atm(mygrid)%va(i,j,k)
+        enddo
+      enddo
+      enddo
+    endif
+
+    if (trim(fieldname) == 't') then
+!$omp parallel do default(shared) private(i,j,k)
+      do k = 1, nk
+      do j=jsc,jec
+        do i=isc,iec
+          datar83d(i-isc+1,j-jsc+1,k) = Atm(mygrid)%pt(i,j,k)
+        enddo
+      enddo
+      enddo
+    endif
+
+    if (trim(fieldname) == 'delp') then
+!$omp parallel do default(shared) private(i,j,k)
+      do k = 1, nk
+      do j=jsc,jec
+        do i=isc,iec
+          datar83d(i-isc+1,j-jsc+1,k) = Atm(mygrid)%delp(i,j,k)
+        enddo
+      enddo
+      enddo
+    endif
+
+    if (trim(fieldname) == 'sphum' .and. sphum > 0) then
+!$omp parallel do default(shared) private(i,j,k)
+      do k = 1, nk
+      do j=jsc,jec
+        do i=isc,iec
+          datar83d(i-isc+1,j-jsc+1,k) = Atm(mygrid)%q(i,j,k,sphum)
+        enddo
+      enddo
+      enddo
+    endif
+
+    if (trim(fieldname) == 'ice_wat' .and. ice_wat > 0) then
+!$omp parallel do default(shared) private(i,j,k)
+      do k = 1, nk
+      do j=jsc,jec
+        do i=isc,iec
+          datar83d(i-isc+1,j-jsc+1,k) = Atm(mygrid)%q(i,j,k,ice_wat)
+        enddo
+      enddo
+      enddo
+    endif
+
+    if (trim(fieldname) == 'liq_wat' .and. liq_wat > 0) then
+!$omp parallel do default(shared) private(i,j,k)
+      do k = 1, nk
+      do j=jsc,jec
+        do i=isc,iec
+          datar83d(i-isc+1,j-jsc+1,k) = Atm(mygrid)%q(i,j,k,liq_wat)
+        enddo
+      enddo
+      enddo
+    endif
+
+    if (trim(fieldname) == 'o3mr' .and. o3mr > 0) then
+!$omp parallel do default(shared) private(i,j,k)
+      do k = 1, nk
+      do j=jsc,jec
+        do i=isc,iec
+          datar83d(i-isc+1,j-jsc+1,k) = Atm(mygrid)%q(i,j,k,o3mr)
+        enddo
+      enddo
+      enddo
+    endif
+
+    if (trim(fieldname) == 'phis') then
+!$omp parallel do default(shared) private(i,j)
+      do j=jsc,jec
+        do i=isc,iec
+          datar82d(i-isc+1,j-jsc+1) = Atm(mygrid)%phis(i,j)
+        enddo
+      enddo
+    endif
+
+    if (trim(fieldname) == 'u_srf') then
+!$omp parallel do default(shared) private(i,j)
+      do j=jsc,jec
+        do i=isc,iec
+          datar82d(i-isc+1,j-jsc+1) = Atm(mygrid)%u_srf(i,j)
+        enddo
+      enddo
+    endif
+
+    if (trim(fieldname) == 'v_srf') then
+!$omp parallel do default(shared) private(i,j)
+      do j=jsc,jec
+        do i=isc,iec
+          datar82d(i-isc+1,j-jsc+1) = Atm(mygrid)%v_srf(i,j)
+        enddo
+      enddo
+    endif
+
+    ! physics
+    if (trim(fieldname) == 'slmsk') then
+!$omp parallel do default(shared) private(i,j,nb,ix)
+      do j=jsc,jec
+        do i=isc,iec
+          nb = Atm_block%blkno(i,j)
+          ix = Atm_block%ixp(i,j)
+          datar82d(i-isc+1,j-jsc+1) = GFS_data(nb)%Sfcprop%slmsk(ix)
+        enddo
+      enddo
+    endif
+
+    if (trim(fieldname) == 'weasd') then
+!$omp parallel do default(shared) private(i,j,nb,ix)
+      do j=jsc,jec
+        do i=isc,iec
+          nb = Atm_block%blkno(i,j)
+          ix = Atm_block%ixp(i,j)
+          datar82d(i-isc+1,j-jsc+1) = GFS_data(nb)%Sfcprop%weasd(ix)
+        enddo
+      enddo
+    endif
+
+    if (trim(fieldname) == 'tsea') then
+!$omp parallel do default(shared) private(i,j,nb,ix)
+      do j=jsc,jec
+        do i=isc,iec
+          nb = Atm_block%blkno(i,j)
+          ix = Atm_block%ixp(i,j)
+          datar82d(i-isc+1,j-jsc+1) = GFS_data(nb)%Sfcprop%tsfco(ix)
+        enddo
+      enddo
+    endif
+
+    if (trim(fieldname) == 'vtype') then
+!$omp parallel do default(shared) private(i,j,nb,ix)
+      do j=jsc,jec
+        do i=isc,iec
+          nb = Atm_block%blkno(i,j)
+          ix = Atm_block%ixp(i,j)
+          datar82d(i-isc+1,j-jsc+1) = GFS_data(nb)%Sfcprop%vtype(ix)
+        enddo
+      enddo
+    endif
+
+    if (trim(fieldname) == 'stype') then
+!$omp parallel do default(shared) private(i,j,nb,ix)
+      do j=jsc,jec
+        do i=isc,iec
+          nb = Atm_block%blkno(i,j)
+          ix = Atm_block%ixp(i,j)
+          datar82d(i-isc+1,j-jsc+1) = GFS_data(nb)%Sfcprop%stype(ix)
+        enddo
+      enddo
+    endif
+
+    if (trim(fieldname) == 'vfrac') then
+!$omp parallel do default(shared) private(i,j,nb,ix)
+      do j=jsc,jec
+        do i=isc,iec
+          nb = Atm_block%blkno(i,j)
+          ix = Atm_block%ixp(i,j)
+          datar82d(i-isc+1,j-jsc+1) = GFS_data(nb)%Sfcprop%vfrac(ix)
+        enddo
+      enddo
+    endif
+
+    if (trim(fieldname) == 'stc') then
+!$omp parallel do default(shared) private(i,j,nb,ix)
+      do j=jsc,jec
+        do i=isc,iec
+          nb = Atm_block%blkno(i,j)
+          ix = Atm_block%ixp(i,j)
+          datar83d(i-isc+1,j-jsc+1,:) = GFS_data(nb)%Sfcprop%stc(ix,:)
+        enddo
+      enddo
+    endif
+
+    if (trim(fieldname) == 'smc') then
+!$omp parallel do default(shared) private(i,j,nb,ix)
+      do j=jsc,jec
+        do i=isc,iec
+          nb = Atm_block%blkno(i,j)
+          ix = Atm_block%ixp(i,j)
+          datar83d(i-isc+1,j-jsc+1,:) = GFS_data(nb)%Sfcprop%smc(ix,:)
+        enddo
+      enddo
+    endif
+
+    if (trim(fieldname) == 'snwdph') then
+!$omp parallel do default(shared) private(i,j,nb,ix)
+      do j=jsc,jec
+        do i=isc,iec
+          nb = Atm_block%blkno(i,j)
+          ix = Atm_block%ixp(i,j)
+          datar82d(i-isc+1,j-jsc+1) = GFS_data(nb)%Sfcprop%snowd(ix)
+        enddo
+      enddo
+    endif
+
+    if (trim(fieldname) == 'f10m') then
+!$omp parallel do default(shared) private(i,j,nb,ix)
+      do j=jsc,jec
+        do i=isc,iec
+          nb = Atm_block%blkno(i,j)
+          ix = Atm_block%ixp(i,j)
+          datar82d(i-isc+1,j-jsc+1) = GFS_data(nb)%Sfcprop%f10m(ix)
+        enddo
+      enddo
+    endif
+
+    if (trim(fieldname) == 'zorl') then
+!$omp parallel do default(shared) private(i,j,nb,ix)
+      do j=jsc,jec
+        do i=isc,iec
+          nb = Atm_block%blkno(i,j)
+          ix = Atm_block%ixp(i,j)
+          datar82d(i-isc+1,j-jsc+1) = GFS_data(nb)%Sfcprop%zorl(ix)
+        enddo
+      enddo
+    endif
+
+    if (trim(fieldname) == 't2m') then
+!$omp parallel do default(shared) private(i,j,nb,ix)
+      do j=jsc,jec
+        do i=isc,iec
+          nb = Atm_block%blkno(i,j)
+          ix = Atm_block%ixp(i,j)
+          datar82d(i-isc+1,j-jsc+1) = GFS_data(nb)%Sfcprop%t2m(ix)
+        enddo
+      enddo
+    endif
+
+    enddo ! exportFields
 
 !---
     if (GFS_control%cplflx) then
@@ -2752,7 +3411,6 @@ end subroutine atmos_data_type_chksum
       enddo
       if (mpp_pe() == mpp_root_pe()) print *,'zeroing coupling accumulated fields at kdt= ',GFS_control%kdt
     endif !cplflx
-!   if (mpp_pe() == mpp_root_pe()) print *,'end of setup_exportdata'
 
   end subroutine setup_exportdata
 
