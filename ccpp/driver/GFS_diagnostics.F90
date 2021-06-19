@@ -2182,6 +2182,87 @@ module GFS_diagnostics
       ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%ca_micro(:)
     enddo
 
+  IF (Model%ca_sgs_emis) THEN
+
+    idx = idx + 1
+    ExtDiag(idx)%axes = 2
+    ExtDiag(idx)%name = 'ca_sgs_gbbepx_frp'
+    ExtDiag(idx)%desc = 'CA sgs GBBEPx frp'
+    ExtDiag(idx)%unit = '%'
+    ExtDiag(idx)%mod_name = 'gfs_phys'
+    allocate (ExtDiag(idx)%data(nblks))
+    do nb = 1,nblks
+      ExtDiag(idx)%data(nb)%var2 => Coupling(nb)%ca_sgs_gbbepx_frp(:)
+    enddo
+
+    idx = idx + 1
+    ExtDiag(idx)%axes = 2
+    ExtDiag(idx)%name = 'ca_emis_anthro'
+    ExtDiag(idx)%desc = 'CA emis anthro'
+    ExtDiag(idx)%unit = '%'
+    ExtDiag(idx)%mod_name = 'gfs_phys'
+    allocate (ExtDiag(idx)%data(nblks))
+    do nb = 1,nblks
+      ExtDiag(idx)%data(nb)%var2 => Coupling(nb)%ca_emis_anthro(:)
+    enddo
+
+    idx = idx + 1
+    ExtDiag(idx)%axes = 2
+    ExtDiag(idx)%name = 'ca_emis_dust'
+    ExtDiag(idx)%desc = 'CA emis dust'
+    ExtDiag(idx)%unit = '%'
+    ExtDiag(idx)%mod_name = 'gfs_phys'
+    allocate (ExtDiag(idx)%data(nblks))
+    do nb = 1,nblks
+      ExtDiag(idx)%data(nb)%var2 => Coupling(nb)%ca_emis_dust(:)
+    enddo
+
+    idx = idx + 1
+    ExtDiag(idx)%axes = 2
+    ExtDiag(idx)%name = 'ca_emis_plume'
+    ExtDiag(idx)%desc = 'CA emis plume'
+    ExtDiag(idx)%unit = '%'
+    ExtDiag(idx)%mod_name = 'gfs_phys'
+    allocate (ExtDiag(idx)%data(nblks))
+    do nb = 1,nblks
+      ExtDiag(idx)%data(nb)%var2 => Coupling(nb)%ca_emis_plume(:)
+    enddo
+
+    idx = idx + 1
+    ExtDiag(idx)%axes = 2
+    ExtDiag(idx)%name = 'ca_emis_seas'
+    ExtDiag(idx)%desc = 'CA emis seas'
+    ExtDiag(idx)%unit = '%'
+    ExtDiag(idx)%mod_name = 'gfs_phys'
+    allocate (ExtDiag(idx)%data(nblks))
+    do nb = 1,nblks
+      ExtDiag(idx)%data(nb)%var2 => Coupling(nb)%ca_emis_seas(:)
+    enddo
+
+    idx = idx + 1
+    ExtDiag(idx)%axes = 2
+    ExtDiag(idx)%name = 'ca_condition_diag'
+    ExtDiag(idx)%desc = 'CA condition diag'
+    ExtDiag(idx)%unit = '%'
+    ExtDiag(idx)%mod_name = 'gfs_phys'
+    allocate (ExtDiag(idx)%data(nblks))
+    do nb = 1,nblks
+      ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%ca_condition(:)
+    enddo
+
+    idx = idx + 1
+    ExtDiag(idx)%axes = 2
+    ExtDiag(idx)%name = 'ca_plume_diag'
+    ExtDiag(idx)%desc = 'CA plume diag'
+    ExtDiag(idx)%unit = '%'
+    ExtDiag(idx)%mod_name = 'gfs_phys'
+    allocate (ExtDiag(idx)%data(nblks))
+    do nb = 1,nblks
+      ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%ca_plume(:)
+    enddo
+    
+  ENDIF
+
   if (Model%ldiag_ugwp) THEN
 !
 ! VAY-2018: Momentum and Temp-re tendencies
@@ -3593,14 +3674,15 @@ module GFS_diagnostics
     num = size(IntDiag(1)%abem, dim=2)
     do num = 1, size(IntDiag(1)%abem, dim=2)
       idx = idx + 1
+     if (num < 7) then
       select case (mod(num,3))
-        case (0)
+        case (1)
           ExtDiag(idx)%name = 'bcem'
           ExtDiag(idx)%desc = 'Black Carbon'
-        case (1)
+        case (2)
           ExtDiag(idx)%name = 'ocem'
           ExtDiag(idx)%desc = 'Organic Carbon'
-        case (2)
+        case (0)
           ExtDiag(idx)%name = 'so2em'
           ExtDiag(idx)%desc = 'SO2'
       end select
@@ -3614,8 +3696,16 @@ module GFS_diagnostics
       end if
 
       ExtDiag(idx)%axes = 2
-      ExtDiag(idx)%unit = 'ug/m2/s'
+      ExtDiag(idx)%unit = 'kg/m2/s'
       ExtDiag(idx)%mod_name = 'gfs_phys'
+     else ! num == 7
+      ExtDiag(idx)%name = 'maod'
+      ExtDiag(idx)%desc = 'MIE AOD'
+      ExtDiag(idx)%axes = 2
+      ExtDiag(idx)%unit = ' '
+      ExtDiag(idx)%mod_name = 'gfs_phys'
+     endif !num < 7
+
       allocate (ExtDiag(idx)%data(nblks))
       do nb = 1,nblks
         ExtDiag(idx)%data(nb)%var2 => IntDiag(nb)%abem(:,num)
@@ -3646,7 +3736,7 @@ module GFS_diagnostics
       end select
 
       ExtDiag(idx)%axes = 2
-      ExtDiag(idx)%unit = 'g/m2'
+      ExtDiag(idx)%unit = 'kg/m2'
       ExtDiag(idx)%mod_name = 'gfs_phys'
       allocate (ExtDiag(idx)%data(nblks))
       do nb = 1,nblks
