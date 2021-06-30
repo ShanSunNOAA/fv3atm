@@ -30,7 +30,8 @@ module GFS_typedefs
       integer, parameter :: NF_AESW = 3
       integer, parameter :: NF_AELW = 3
       integer, parameter :: NSPC    = 5
-      integer, parameter :: NSPC1   = NSPC + 1
+      !integer, parameter :: NSPC1   = NSPC + 1
+      integer, parameter :: NSPC1   = NSPC + 5 !lzhang
       ! from module_radiation_clouds
       integer, parameter :: NF_CLDS = 9
       ! from module_radiation_gases
@@ -253,6 +254,7 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: emi2_in(:,:,:)   => null()  !< anthropogenic background 3D input
     real (kind=kind_phys), pointer :: fire_MODIS (:,:) => null()  !< anthropogenic fire MODIS input
     real (kind=kind_phys), pointer :: fire_GBBEPx(:,:) => null()  !< anthropogenic fire GBBEPx input
+    real (kind=kind_phys), pointer :: fire2_GBBEPx(:,:,:) => null()  !< anthropogenic fire GBBEPx input
 
 !--- In (radiation only)
     real (kind=kind_phys), pointer :: sncovr (:)   => null()  !< snow cover in fraction over land
@@ -2408,6 +2410,7 @@ module GFS_typedefs
     allocate (Sfcprop%emi2_in  (IM,Model%levs,3))
     allocate (Sfcprop%fire_MODIS  (IM,13))
     allocate (Sfcprop%fire_GBBEPx (IM,5))
+    allocate (Sfcprop%fire2_GBBEPx (IM,32,5))
 
     Sfcprop%slmsk     = clear_val
     Sfcprop%oceanfrac = clear_val
@@ -2434,6 +2437,7 @@ module GFS_typedefs
     Sfcprop%emi2_in   = clear_val
     Sfcprop%fire_MODIS  = clear_val
     Sfcprop%fire_GBBEPx = clear_val
+    Sfcprop%fire2_GBBEPx = clear_val
 
 !--- In (radiation only)
     allocate (Sfcprop%snoalb (IM))
@@ -3171,7 +3175,8 @@ module GFS_typedefs
     real(kind=kind_phys) :: fhlwr          = 3600.           !< frequency for longwave radiation (secs)
     integer              :: nhfrad         = 0               !< number of timesteps for which to call radiation on physics timestep (coldstarts)
     integer              :: levr           = -99             !< number of vertical levels for radiation calculations
-    integer              :: nfxr           = 39+6            !< second dimension of input/output array fluxr
+    !lzhang integer              :: nfxr           = 39+6            !< second dimension of input/output array fluxr
+    integer              :: nfxr           = 39+10            !< second dimension of input/output array fluxr
     logical              :: iaerclm        = .false.         !< flag for initializing aero data
     integer              :: iccn           =  0              !< logical to use IN CCN forcing for MG2/3
     integer              :: iflip          =  1              !< iflip - is not the same as flipv
@@ -6680,7 +6685,7 @@ module GFS_typedefs
     ! -- burning emission diagnostics for
     ! -- (in order): black carbon,
     ! -- organic carbon, and sulfur dioxide
-    allocate (Diag%abem(IM,7)) ! MIE AOD as 7th
+    allocate (Diag%abem(IM,16)) ! MIE AOD as 7, follow by aodbc,aodoc,aoddt,aodss,aodsu,sca,aaod
     Diag%abem = zero
 
     ! -- initialize column burden diagnostics

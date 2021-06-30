@@ -634,6 +634,13 @@
   dimensions = (horizontal_loop_extent,5)
   type = real
   kind = kind_phys
+[fire2_GBBEPx]
+  standard_name = emission_fire2_GBBEPx
+  long_name = emission fire2 GBBEPx
+  units = various
+  dimensions = (horizontal_dimension,32,5)
+  type = real
+  kind = kind_phys
 [fire_MODIS]
   standard_name = emission_fire_MODIS
   long_name = emission fire MODIS
@@ -7681,7 +7688,7 @@
   standard_name = instantaneous_anthopogenic_and_biomass_burning_emissions
   long_name = instantaneous anthopogenic and biomass burning emissions for black carbon, organic carbon, and sulfur dioxide
   units = kg m-2 s-1
-  dimensions = (horizontal_loop_extent,7)
+  dimensions = (horizontal_loop_extent,16)
   type = real
   kind = kind_phys
 [aecm]
