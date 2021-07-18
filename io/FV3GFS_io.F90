@@ -68,7 +68,7 @@ module FV3GFS_io_mod
   character(len=32)  :: fn_emi = 'emi_data.nc'
   character(len=32)  :: fn_emi2= 'emi2_data.nc'
   character(len=32)  :: fn_gbbepx = 'FIRE_GBBEPx_data.nc'
-  character(len=32)  :: fn_gbbepx2 = 'FIRE2_GBBEPx_data.nc'
+  character(len=32)  :: fn_gbbepx2 = 'FIRE2_data.nc'
   character(len=32)  :: fn_modis  = 'FIRE_MODIS_data.nc'
 
   !--- GFDL FMS netcdf restart data types
@@ -828,7 +828,7 @@ module FV3GFS_io_mod
     if (.not. allocated(gbbepx2_name)) then
     !--- allocate the various containers needed for orography data
       allocate(gbbepx2_name(nvar_gbbepx2))
-      allocate(gbbepx2_var(nx,ny,31,nvar_gbbepx2))
+      allocate(gbbepx2_var(nx,ny,33,nvar_gbbepx2)) !fire2
 
       gbbepx2_name(1)  = 'ebu_bc'
       gbbepx2_name(2)  = 'ebu_oc'
@@ -854,7 +854,7 @@ module FV3GFS_io_mod
         i = Atm_block%index(nb)%ii(ix) - isc + 1
         j = Atm_block%index(nb)%jj(ix) - jsc + 1
         !--- assign hprime(1:10) and hprime(15:24) with new oro stat data
-        do k = 1, 31
+        do k = 1, 33 !fire2
           Sfcprop(nb)%fire2_GBBEPx(ix,k,1)  = gbbepx2_var(i,j,k,1)
           Sfcprop(nb)%fire2_GBBEPx(ix,k,2)  = gbbepx2_var(i,j,k,2)
           Sfcprop(nb)%fire2_GBBEPx(ix,k,3)  = gbbepx2_var(i,j,k,3)

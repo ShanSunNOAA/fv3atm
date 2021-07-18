@@ -2410,7 +2410,7 @@ module GFS_typedefs
     allocate (Sfcprop%emi2_in  (IM,Model%levs,3))
     allocate (Sfcprop%fire_MODIS  (IM,13))
     allocate (Sfcprop%fire_GBBEPx (IM,5))
-    allocate (Sfcprop%fire2_GBBEPx (IM,32,5))
+    allocate (Sfcprop%fire2_GBBEPx (IM,33,5))
 
     Sfcprop%slmsk     = clear_val
     Sfcprop%oceanfrac = clear_val
