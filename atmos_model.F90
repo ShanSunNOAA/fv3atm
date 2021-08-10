@@ -268,9 +268,9 @@ subroutine update_atmos_radiation_physics (Atmos)
 
 !--- if coupled, assign coupled fields
 
-      if (.not. GFS_control%cplchm) then
+     if (.not. GFS_control%cplchm .or. GFS_control%cplflx) then
         call assign_importdata(rc)
-      endif
+     endif
 
       ! Calculate total non-physics tendencies by substracting old GFS Stateout
       ! variables from new/updated GFS Statein variables (gives the tendencies
@@ -923,7 +923,7 @@ subroutine update_atmos_model_state (Atmos)
     call atmosphere_get_bottom_layer (Atm_block, DYCORE_Data)
 
     !if in coupled mode, set up coupled fields
-    if (.not. GFS_control%cplchm) then
+    if (.not. GFS_control%cplchm .or. GFS_control%cplflx) then
       call setup_exportdata()
     endif
 
