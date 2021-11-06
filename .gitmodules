@@ -11,4 +11,4 @@
 	#url = https://github.com/NOAA-GSL/ccpp-physics
 	#branch = gsl/develop-chem
 	url = https://github.com/shansun6/ccpp-physics
-	branch = v20210625 
+	branch = wgne_clim_v20210929

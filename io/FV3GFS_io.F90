@@ -1,9 +1,10 @@
-#define EMI_DATA
-#define EMI2_DATA
-#define FENGSHA_DUST_DATA
-#define FENGSHA_DUST_DATA_INFO
+#undef EMI_DATA
+#undef EMI2_DATA
+#define CLIM_DATA
+#undef FENGSHA_DUST_DATA
+#undef FENGSHA_DUST_DATA_INFO
 #undef FIRE_OPT_GBBEPx
-#define FIRE2_OPT_GBBEPx
+#undef FIRE2_OPT_GBBEPx
 #undef  FIRE_OPT_MODIS
 module FV3GFS_io_mod
 
@@ -67,12 +68,13 @@ module FV3GFS_io_mod
   character(len=32)  :: fn_dust= 'dust_data.nc'
   character(len=32)  :: fn_emi = 'emi_data.nc'
   character(len=32)  :: fn_emi2= 'emi2_data.nc'
+  character(len=32)  :: fn_clim= 'aerosol.nc'
   character(len=32)  :: fn_gbbepx = 'FIRE_GBBEPx_data.nc'
   character(len=32)  :: fn_gbbepx2 = 'FIRE2_data.nc'
   character(len=32)  :: fn_modis  = 'FIRE_MODIS_data.nc'
 
   !--- GFDL FMS netcdf restart data types
-  type(restart_file_type) :: Oro_restart, Sfc_restart, Phy_restart, dust_restart, emi_restart, emi2_restart,gbbepx2_restart,gbbepx_restart, modis_restart
+  type(restart_file_type) :: Oro_restart, Sfc_restart, Phy_restart, dust_restart, emi_restart, emi2_restart,clim_restart,gbbepx2_restart,gbbepx_restart, modis_restart
   type(restart_file_type) :: Oro_ls_restart, Oro_ss_restart
  
   !--- GFDL FMS restart containers
@@ -80,10 +82,10 @@ module FV3GFS_io_mod
   real(kind=kind_phys), allocatable, target, dimension(:,:,:)   :: oro_var2, sfc_var2, phy_var2, sfc_var3ice
   character(len=32),    allocatable,         dimension(:)       :: oro_ls_ss_name
   real(kind=kind_phys), allocatable, target, dimension(:,:,:)   :: oro_ls_var, oro_ss_var
-  character(len=32),    allocatable,         dimension(:)       :: dust_name, emi_name, emi2_name, gbbepx2_name, gbbepx_name, modis_name
+  character(len=32),    allocatable,         dimension(:)       :: dust_name, emi_name, emi2_name, clim_name, gbbepx2_name, gbbepx_name, modis_name
   real(kind=kind_phys), allocatable, target, dimension(:,:,:)   :: dust_var, emi_var, gbbepx_var, modis_var
   real(kind=kind_phys), allocatable, target, dimension(:,:,:,:) :: gbbepx2_var
-  real(kind=kind_phys), allocatable, target, dimension(:,:,:,:) :: emi2_var
+  real(kind=kind_phys), allocatable, target, dimension(:,:,:,:) :: emi2_var, clim_var
   real(kind=kind_phys), allocatable, target, dimension(:,:,:,:) :: sfc_var3, phy_var3
   !--- Noah MP restart containers
   real(kind=kind_phys), allocatable, target, dimension(:,:,:,:) :: sfc_var3sn,sfc_var3eq,sfc_var3zn
@@ -517,7 +519,7 @@ module FV3GFS_io_mod
     integer :: id_restart
     integer :: nvar_o2, nvar_s2m, nvar_s2o, nvar_s3
     integer :: nvar_oro_ls_ss
-    integer :: nvar_dust, nvar_emi,nvar_emi2, nvar_gbbepx, nvar_gbbepx2,nvar_modis
+    integer :: nvar_dust, nvar_emi,nvar_emi2, nvar_clim, nvar_gbbepx, nvar_gbbepx2,nvar_modis
     integer :: nvar_s2r, nvar_s2mp, nvar_s3mp, isnow
     real(kind=kind_phys), pointer, dimension(:,:)   :: var2_p  => NULL()
     real(kind=kind_phys), pointer, dimension(:,:,:) :: var3_p  => NULL()
@@ -536,6 +538,7 @@ module FV3GFS_io_mod
       nvar_dust   = 5
       nvar_emi    = 10
       nvar_emi2   = 3
+      nvar_clim   = 15
       nvar_gbbepx = 5
       nvar_gbbepx2 = 5
       nvar_modis  = 13
@@ -543,6 +546,7 @@ module FV3GFS_io_mod
       nvar_dust   = 0
       nvar_emi    = 0
       nvar_emi2   = 0
+      nvar_clim   = 0
       nvar_gbbepx = 0
       nvar_gbbepx2 = 0
       nvar_modis  = 0
@@ -823,6 +827,69 @@ module FV3GFS_io_mod
 
     call free_restart_type(emi2_restart)
 #endif 
+
+#ifdef CLIM_DATA
+    if (.not. allocated(clim_name)) then
+    !--- allocate the various containers needed for climatology aerosol data
+      allocate(clim_name(nvar_clim))
+      allocate(clim_var(nx,ny,64,nvar_clim))
+
+      clim_name(1)  = 'bc1'
+      clim_name(2)  = 'bc2'
+      clim_name(3)  = 'dust1'
+      clim_name(4)  = 'dust2'
+      clim_name(5)  = 'dust3'
+      clim_name(6)  = 'dust4'
+      clim_name(7)  = 'dust5'
+      clim_name(8)  = 'oc1'
+      clim_name(9)  = 'oc2'
+      clim_name(10) = 'seas1'
+      clim_name(11) = 'seas2'
+      clim_name(12) = 'seas3'
+      clim_name(13) = 'seas4'
+      clim_name(14) = 'seas5'
+      clim_name(15) = 'sulf'
+      !--- register the 3D fields
+      mand = .false.
+      do num = 1,nvar_clim
+        var3_p2 => clim_var(:,:,:,num)
+        id_restart = register_restart_field(clim_restart, fn_clim, clim_name(num), var3_p2, domain=fv_domain,mandatory=mand)
+      enddo
+      nullify(var3_p2)
+    endif
+
+    !--- read new GSD created clim restart/data
+    call mpp_error(NOTE,'reading clim information from INPUT/aerosol.tile*.nc')
+    call restore_state(clim_restart)
+
+    do nb = 1, Atm_block%nblks
+      !--- 3D variables
+      do ix = 1, Atm_block%blksz(nb)
+        i = Atm_block%index(nb)%ii(ix) - isc + 1
+        j = Atm_block%index(nb)%jj(ix) - jsc + 1
+        !--- assign hprime(1:10) and hprime(15:24) with new oro stat data
+        do k = 1, 64
+          Sfcprop(nb)%clim_in(ix,k,1)  = clim_var(i,j,65-k,1)
+          Sfcprop(nb)%clim_in(ix,k,2)  = clim_var(i,j,65-k,2)
+          Sfcprop(nb)%clim_in(ix,k,3)  = clim_var(i,j,65-k,3)
+          Sfcprop(nb)%clim_in(ix,k,4)  = clim_var(i,j,65-k,4)
+          Sfcprop(nb)%clim_in(ix,k,5)  = clim_var(i,j,65-k,5)
+          Sfcprop(nb)%clim_in(ix,k,6)  = clim_var(i,j,65-k,6)
+          Sfcprop(nb)%clim_in(ix,k,7)  = clim_var(i,j,65-k,7)
+          Sfcprop(nb)%clim_in(ix,k,8)  = clim_var(i,j,65-k,8)
+          Sfcprop(nb)%clim_in(ix,k,9)  = clim_var(i,j,65-k,9)
+          Sfcprop(nb)%clim_in(ix,k,10) = clim_var(i,j,65-k,10)
+          Sfcprop(nb)%clim_in(ix,k,11) = clim_var(i,j,65-k,11)
+          Sfcprop(nb)%clim_in(ix,k,12) = clim_var(i,j,65-k,12)
+          Sfcprop(nb)%clim_in(ix,k,13) = clim_var(i,j,65-k,13)
+          Sfcprop(nb)%clim_in(ix,k,14) = clim_var(i,j,65-k,14)
+          Sfcprop(nb)%clim_in(ix,k,15) = clim_var(i,j,65-k,15)
+        enddo
+      enddo
+    enddo
+
+    call free_restart_type(clim_restart)
+#endif
 
 #ifdef FIRE2_OPT_GBBEPx
     if (.not. allocated(gbbepx2_name)) then

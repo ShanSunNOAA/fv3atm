@@ -252,6 +252,7 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: dust_in(:,:)     => null()  !< fengsha dust input
     real (kind=kind_phys), pointer :: emi_in (:,:)     => null()  !< anthropogenic background input
     real (kind=kind_phys), pointer :: emi2_in(:,:,:)   => null()  !< anthropogenic background 3D input
+    real (kind=kind_phys), pointer :: clim_in(:,:,:)   => null()  !< anthropogenic background 3D input
     real (kind=kind_phys), pointer :: fire_MODIS (:,:) => null()  !< anthropogenic fire MODIS input
     real (kind=kind_phys), pointer :: fire_GBBEPx(:,:) => null()  !< anthropogenic fire GBBEPx input
     real (kind=kind_phys), pointer :: fire2_GBBEPx(:,:,:) => null()  !< anthropogenic fire GBBEPx input
@@ -2408,6 +2409,7 @@ module GFS_typedefs
     allocate (Sfcprop%dust_in  (IM,5))
     allocate (Sfcprop%emi_in   (IM,10))
     allocate (Sfcprop%emi2_in  (IM,Model%levs,3))
+    allocate (Sfcprop%clim_in  (IM,Model%levs,15))
     allocate (Sfcprop%fire_MODIS  (IM,13))
     allocate (Sfcprop%fire_GBBEPx (IM,5))
     allocate (Sfcprop%fire2_GBBEPx (IM,33,5))
@@ -2435,6 +2437,7 @@ module GFS_typedefs
     Sfcprop%dust_in   = clear_val
     Sfcprop%emi_in    = clear_val
     Sfcprop%emi2_in   = clear_val
+    Sfcprop%clim_in   = clear_val
     Sfcprop%fire_MODIS  = clear_val
     Sfcprop%fire_GBBEPx = clear_val
     Sfcprop%fire2_GBBEPx = clear_val
