@@ -210,6 +210,7 @@ SCHEME_FILES = [
     'physics/physics/sfc_nst.f',
     'physics/physics/sfc_nst_post.f',
     'physics/physics/sfc_ocean.F',
+    'physics/physics/skinsst.f90',
     'physics/physics/sfc_sice.f',
     # HAFS FER_HIRES
     'physics/physics/mp_fer_hires.F90',
