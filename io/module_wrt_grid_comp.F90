@@ -1880,7 +1880,8 @@
         write(cform, '("(I",I1,".",I1,",A1,I2.2,A1,I2.2)")') ndig, ndig
         write(cfhour, cform) nf_hours,'-',nf_minutes,'-',nf_seconds
       else
-        ndig = max(log10(nf_hours+0.5)+1., 3.)
+!ss     ndig = max(log10(nf_hours+0.5)+1., 3.)
+        ndig = 4
         write(cform, '("(I",I1,".",I1,")")') ndig, ndig
         write(cfhour, cform) nf_hours
       endif
