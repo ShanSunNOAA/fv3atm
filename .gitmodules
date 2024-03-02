@@ -9,7 +9,7 @@
 [submodule "ccpp/physics"]
   path = ccpp/physics
   url = https://github.com/ShanSunNOAA/ccpp-physics
-  branch = skinsst_20240131
+  branch = skinsst1deg_20240131
 [submodule "upp"]
   path = upp
   url = https://github.com/NOAA-EMC/UPP
