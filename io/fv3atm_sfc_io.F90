@@ -267,14 +267,14 @@ contains
         call register_axis(Sfc_restart, 'lat', 'Y')
         call register_axis(Sfc_restart, 'lsoil', dimension_length=Model%lsoil)
       else
-        call register_axis(Sfc_restart, 'xaxis_1', 'X')
-        call register_axis(Sfc_restart, 'yaxis_1', 'Y')
+        call register_axis(Sfc_restart, 'lon', 'X')
+        call register_axis(Sfc_restart, 'lat', 'Y')
         call register_axis(Sfc_restart, 'zaxis_1', dimension_length=4)
         call register_axis(Sfc_restart, 'Time', 1)
       end if
     else
-      call register_axis(Sfc_restart, 'xaxis_1', 'X')
-      call register_axis(Sfc_restart, 'yaxis_1', 'Y')
+      call register_axis(Sfc_restart, 'lon', 'X')
+      call register_axis(Sfc_restart, 'lat', 'Y')
       call register_axis(Sfc_restart, 'zaxis_1', dimension_length=Model%kice)
       if (Model%lsm == Model%lsm_noah .or. Model%lsm == Model%lsm_noahmp) then
         call register_axis(Sfc_restart, 'zaxis_2', dimension_length=Model%lsoil)
@@ -313,16 +313,16 @@ contains
     integer :: i, is, ie
     logical :: mand
 
-    call register_field(Sfc_restart, 'xaxis_1', axis_type, (/'xaxis_1'/))
-    call register_variable_attribute(Sfc_restart, 'xaxis_1', 'cartesian_axis', 'X', str_len=1)
-    call get_global_io_domain_indices(Sfc_restart, 'xaxis_1', is, ie, indices=buffer)
-    call write_data(Sfc_restart, "xaxis_1", buffer)
+    call register_field(Sfc_restart, 'lon', axis_type, (/'lon'/))
+    call register_variable_attribute(Sfc_restart, 'lon', 'cartesian_axis', 'X', str_len=1)
+    call get_global_io_domain_indices(Sfc_restart, 'lon', is, ie, indices=buffer)
+    call write_data(Sfc_restart, "lon", buffer)
     deallocate(buffer)
 
-    call register_field(Sfc_restart, 'yaxis_1', axis_type, (/'yaxis_1'/))
-    call register_variable_attribute(Sfc_restart, 'yaxis_1', 'cartesian_axis', 'Y', str_len=1)
-    call get_global_io_domain_indices(Sfc_restart, 'yaxis_1', is, ie, indices=buffer)
-    call write_data(Sfc_restart, "yaxis_1", buffer)
+    call register_field(Sfc_restart, 'lat', axis_type, (/'lat'/))
+    call register_variable_attribute(Sfc_restart, 'lat', 'cartesian_axis', 'Y', str_len=1)
+    call get_global_io_domain_indices(Sfc_restart, 'lat', is, ie, indices=buffer)
+    call write_data(Sfc_restart, "lat", buffer)
     deallocate(buffer)
 
     call register_field(Sfc_restart, 'zaxis_1', axis_type, (/'zaxis_1'/))
@@ -751,14 +751,14 @@ contains
     integer :: xaxis_1_chunk, yaxis_1_chunk
     integer :: chunksizes2d(3)
 
-    call get_dimension_size(Sfc_restart, 'xaxis_1', xaxis_1_chunk)
-    call get_dimension_size(Sfc_restart, 'yaxis_1', yaxis_1_chunk)
+    call get_dimension_size(Sfc_restart, 'lon', xaxis_1_chunk)
+    call get_dimension_size(Sfc_restart, 'lat', yaxis_1_chunk)
 
     if(.not.reading) then
-      time2d=(/'xaxis_1','yaxis_1','Time   '/)
+      time2d=(/'lon','lat','Time   '/)
       chunksizes2d=(/xaxis_1_chunk, yaxis_1_chunk, 1/)
     else
-      time2d=(/'Time   ','yaxis_1','xaxis_1'/)
+      time2d=(/'Time   ','lat','lon'/)
     endif
 
     !--- register the 2D fields
@@ -888,16 +888,16 @@ contains
     integer :: num
     logical :: mand
 
-    character(len=7), parameter :: xyz1_time(4) = (/'xaxis_1', 'yaxis_1', 'zaxis_1', 'Time   '/)
-    character(len=7), parameter :: xyz2_time(4) = (/'xaxis_1', 'yaxis_1', 'zaxis_2', 'Time   '/)
-    character(len=7), parameter :: xyz3_time(4) = (/'xaxis_1', 'yaxis_1', 'zaxis_3', 'Time   '/)
-    character(len=7), parameter :: xyz4_time(4) = (/'xaxis_1', 'yaxis_1', 'zaxis_4', 'Time   '/)
+    character(len=7), parameter :: xyz1_time(4) = (/'lon', 'lat', 'zaxis_1', 'Time   '/)
+    character(len=7), parameter :: xyz2_time(4) = (/'lon', 'lat', 'zaxis_2', 'Time   '/)
+    character(len=7), parameter :: xyz3_time(4) = (/'lon', 'lat', 'zaxis_3', 'Time   '/)
+    character(len=7), parameter :: xyz4_time(4) = (/'lon', 'lat', 'zaxis_4', 'Time   '/)
 
     integer :: xaxis_1_chunk, yaxis_1_chunk
     integer :: chunksizes3d(4)
 
-    call get_dimension_size(Sfc_restart, 'xaxis_1', xaxis_1_chunk)
-    call get_dimension_size(Sfc_restart, 'yaxis_1', yaxis_1_chunk)
+    call get_dimension_size(Sfc_restart, 'lon', xaxis_1_chunk)
+    call get_dimension_size(Sfc_restart, 'lat', yaxis_1_chunk)
 
     chunksizes3d = (/xaxis_1_chunk, yaxis_1_chunk, 1, 1/)
 
@@ -913,7 +913,7 @@ contains
       do num = 1,sfc%nvar3
         var3_p => sfc%var3(:,:,:,num)
         if ( warm_start ) then
-          call register_restart_field(Sfc_restart, sfc%name3(num), var3_p, dimensions=(/'xaxis_1', 'yaxis_1', 'lsoil  ', 'Time   '/),&
+          call register_restart_field(Sfc_restart, sfc%name3(num), var3_p, dimensions=(/'lon', 'lat', 'lsoil  ', 'Time   '/),&
                &is_optional=.true.)
         else
           if(sfc%is_lsoil) then
