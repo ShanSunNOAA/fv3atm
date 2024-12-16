@@ -202,6 +202,7 @@ SCHEME_FILES = [
     'physics/physics/SFC_Layer/UFS/sfc_nst_pre.f90',
     'physics/physics/SFC_Layer/UFS/sfc_nst.f90',
     'physics/physics/SFC_Layer/UFS/sfc_nst_post.f90',
+    'physics/physics/SFC_Layer/UFS/skinsst.f90',
     'physics/physics/SFC_Models/Land/RUC/lsm_ruc.F90',
     'physics/physics/SFC_Models/SeaIce/CICE/sfc_cice.f',
     'physics/physics/SFC_Models/Land/sfc_land.F90',
