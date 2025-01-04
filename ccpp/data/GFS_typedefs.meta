@@ -1446,6 +1446,48 @@
   type = real
   kind = kind_phys
   active = (control_for_nsstm > 0)
+[skinold]
+  standard_name = previous_skin_temperature
+  long_name = previous skin temperature
+  units = K
+  dimensions = (horizontal_dimension)
+  type = real
+  kind = kind_phys
+[temwat]
+  standard_name = mixed_layer_temperature_lake
+  long_name = mixed layer temperature lake
+  units = K
+  dimensions = (horizontal_dimension)
+  type = real
+  kind = kind_phys
+[xtinct]
+  standard_name = extinction_coefficient
+  long_name = extinction coefficient
+  units = none
+  dimensions = (horizontal_dimension)
+  type = real
+  kind = kind_phys
+[ticold]
+  standard_name = previous_lake_ice_surface_temperature
+  long_name = previous lake ice surface temperature
+  units = K
+  dimensions = (horizontal_dimension)
+  type = real
+  kind = kind_phys
+[thkice]
+  standard_name = lake_ice_thickness
+  long_name = lake ice thickness
+  units = m
+  dimensions = (horizontal_dimension)
+  type = real
+  kind = kind_phys
+[flxold]
+  standard_name = previous_lake_surface_heatflux
+  long_name = previous lake surface heatflux
+  units = W m-2
+  dimensions = (horizontal_dimension)
+  type = real
+  kind = kind_phys
 [snowxy]
   standard_name = number_of_snow_layers
   long_name = number of snow layers

@@ -386,6 +386,13 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: ifd    (:)   => null()  !< nst_fld%ifd     index to start DTM run or not
     real (kind=kind_phys), pointer :: dt_cool(:)   => null()  !< nst_fld%dt_cool Sub layer cooling amount
     real (kind=kind_phys), pointer :: qrain  (:)   => null()  !< nst_fld%qrain   sensible heat flux due to rainfall (watts)
+!--- SkinSST variables
+    real (kind=kind_phys), pointer :: skinold(:)   => null()  !< previous skin temp
+    real (kind=kind_phys), pointer :: temwat (:)   => null()  !< lake mixed layer temperature
+    real (kind=kind_phys), pointer :: xtinct (:)   => null()  !< extinction coefficient
+    real (kind=kind_phys), pointer :: thkice (:)   => null()  !< lake ice thickness
+    real (kind=kind_phys), pointer :: ticold (:)   => null()  !< previous lake ice surf. temp
+    real (kind=kind_phys), pointer :: flxold (:)   => null()  !< previous lake sfc heat flux
 
     ! Soil properties for RUC LSM (number of levels different from NOAH 4-layer model)
     real (kind=kind_phys), pointer :: wetness(:)         => null()  !< normalized soil wetness for lsm
@@ -2574,6 +2581,19 @@ module GFS_typedefs
       Sfcprop%dt_cool = zero
       Sfcprop%qrain   = zero
     endif
+    allocate (Sfcprop%skinold (IM))
+    allocate (Sfcprop%temwat  (IM))
+    allocate (Sfcprop%xtinct  (IM))
+    allocate (Sfcprop%thkice  (IM))
+    allocate (Sfcprop%ticold  (IM))
+    allocate (Sfcprop%flxold  (IM))
+
+    Sfcprop%skinold = zero
+    Sfcprop%temwat  = zero
+    Sfcprop%xtinct  = zero
+    Sfcprop%thkice  = zero
+    Sfcprop%ticold  = zero
+    Sfcprop%flxold  = zero
     if (Model%lsm == Model%lsm_noah .or. Model%lsm == Model%lsm_noahmp) then
       allocate (Sfcprop%rca      (IM))
       Sfcprop%rca        = clear_val
