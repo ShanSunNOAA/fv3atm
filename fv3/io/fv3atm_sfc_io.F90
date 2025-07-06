@@ -153,6 +153,7 @@ contains
     else
       nvar2l = 0
     endif
+  ! nvar2m = nvar2m + 7  ! skinsst
 
     nvar_before_lake=nvar2m+nvar2o+nvar2r+nvar2mp
 
@@ -501,6 +502,7 @@ contains
     nt=nt+1 ; sfc%name2(nt) = 'thkice'
     nt=nt+1 ; sfc%name2(nt) = 'ticold'
     nt=nt+1 ; sfc%name2(nt) = 'flxold'
+    nt=nt+1 ; sfc%name2(nt) = 'wrmlyr'
     !
     ! Only needed when Noah MP LSM is used - 29 2D
     !
@@ -675,6 +677,7 @@ contains
     nt=nt+1 ; sfc%name2(nt) = 'thkice'
     nt=nt+1 ; sfc%name2(nt) = 'ticold'
     nt=nt+1 ; sfc%name2(nt) = 'flxold'
+    nt=nt+1 ; sfc%name2(nt) = 'wrmlyr'
     !
     ! Only needed when Noah MP LSM is used - 29 2D
     !
@@ -1266,6 +1269,7 @@ contains
       Sfcprop%thkice(ixs:ixe)  = zero
       Sfcprop%ticold(ixs:ixe)  = zero
       Sfcprop%flxold(ixs:ixe)  = zero
+      Sfcprop%wrmlyr(ixs:ixe)  = zero
 
       if (Model%lsm == Model%lsm_ruc .and. (warm_start .or. .not. reading)) then
         !--- Extra RUC variables

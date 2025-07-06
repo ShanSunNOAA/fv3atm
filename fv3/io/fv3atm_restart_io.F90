@@ -204,6 +204,7 @@ contains
       nsfcprop2d = nsfcprop2d + 10
     endif
 
+  ! nsfcprop2d = nsfcprop2d + 7   !skinsst
     allocate (temp2d(isc:iec,jsc:jec,nsfcprop2d+Model%ntot2d+Model%nctp))
     allocate (temp3d(isc:iec,jsc:jec,1:lev,14+Model%ntot3d+2*ntr))
     allocate (temp3dlevsp1(isc:iec,jsc:jec,1:lev+1,3))
@@ -459,6 +460,7 @@ contains
       nt=nt+1; temp2d(isc:iec,jsc:jec,nt) = reshape(GFS_Sfcprop%ticold,  (/iec-isc+1, jec-jsc+1/))
       nt=nt+1; temp2d(isc:iec,jsc:jec,nt) = reshape(GFS_Sfcprop%thkice,  (/iec-isc+1, jec-jsc+1/))
       nt=nt+1; temp2d(isc:iec,jsc:jec,nt) = reshape(GFS_Sfcprop%flxold,  (/iec-isc+1, jec-jsc+1/))
+      nt=nt+1; temp2d(isc:iec,jsc:jec,nt) = reshape(GFS_Sfcprop%wrmlyr,  (/iec-isc+1, jec-jsc+1/))
 
       ! Flake
       if (Model%lkm > 0 .and. Model%iopt_lake==Model%iopt_lake_flake) then

@@ -401,6 +401,7 @@ module GFS_typedefs
     real (kind=kind_phys), pointer :: thkice (:)   => null()  !< lake ice thickness
     real (kind=kind_phys), pointer :: ticold (:)   => null()  !< previous lake ice surf. temp
     real (kind=kind_phys), pointer :: flxold (:)   => null()  !< previous lake sfc heat flux
+    real (kind=kind_phys), pointer :: wrmlyr (:)   => null()  !< 
 
     ! Soil properties for RUC LSM (number of levels different from NOAH 4-layer model)
     real (kind=kind_phys), pointer :: wetness(:)         => null()  !< normalized soil wetness for lsm
@@ -2623,6 +2624,7 @@ module GFS_typedefs
     allocate (Sfcprop%thkice  (IM))
     allocate (Sfcprop%ticold  (IM))
     allocate (Sfcprop%flxold  (IM))
+    allocate (Sfcprop%wrmlyr  (IM))
 
     Sfcprop%skinold = zero
     Sfcprop%temwat  = zero
@@ -2630,6 +2632,7 @@ module GFS_typedefs
     Sfcprop%thkice  = zero
     Sfcprop%ticold  = zero
     Sfcprop%flxold  = zero
+    Sfcprop%wrmlyr  = zero
     if (Model%lsm == Model%lsm_noah .or. Model%lsm == Model%lsm_noahmp .or. Model%lsm == Model%lsm_ruc) then
       allocate (Sfcprop%xlaixy   (IM))
       Sfcprop%xlaixy     = clear_val

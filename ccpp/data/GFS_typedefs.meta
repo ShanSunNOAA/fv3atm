@@ -1503,6 +1503,13 @@
   dimensions = (horizontal_dimension)
   type = real
   kind = kind_phys
+[wrmlyr]
+  standard_name = warm_layer
+  long_name = warm layer
+  units = m
+  dimensions = (horizontal_dimension)
+  type = real
+  kind = kind_phys
 [snowxy]
   standard_name = number_of_snow_layers
   long_name = number of snow layers
