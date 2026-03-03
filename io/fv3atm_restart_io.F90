@@ -180,6 +180,7 @@ contains
     ntr = size(GFS_Statein%qgrs,3)
 
     nsfcprop2d = 94
+    nsfcprop2d = nsfcprop2d + 6 ! include 6 skinsst arrays
     if (Model%lsm == Model%lsm_noahmp) then
       nsfcprop2d = nsfcprop2d + 49
       if (Model%use_cice_alb) then
@@ -453,6 +454,12 @@ contains
         nt=nt+1; temp2d(isc:iec,jsc:jec,nt) = reshape(GFS_Sfcprop%dt_cool, (/iec-isc+1, jec-jsc+1/))
         nt=nt+1; temp2d(isc:iec,jsc:jec,nt) = reshape(GFS_Sfcprop%qrain,   (/iec-isc+1, jec-jsc+1/))
       endif nstf_name_choice
+      nt=nt+1; temp2d(isc:iec,jsc:jec,nt) = reshape(GFS_Sfcprop%skinold, (/iec-isc+1, jec-jsc+1/))
+      nt=nt+1; temp2d(isc:iec,jsc:jec,nt) = reshape(GFS_Sfcprop%temwat,  (/iec-isc+1, jec-jsc+1/))
+      nt=nt+1; temp2d(isc:iec,jsc:jec,nt) = reshape(GFS_Sfcprop%xtinct,  (/iec-isc+1, jec-jsc+1/))
+      nt=nt+1; temp2d(isc:iec,jsc:jec,nt) = reshape(GFS_Sfcprop%ticold,  (/iec-isc+1, jec-jsc+1/))
+      nt=nt+1; temp2d(isc:iec,jsc:jec,nt) = reshape(GFS_Sfcprop%thkice,  (/iec-isc+1, jec-jsc+1/))
+      nt=nt+1; temp2d(isc:iec,jsc:jec,nt) = reshape(GFS_Sfcprop%flxold,  (/iec-isc+1, jec-jsc+1/))
 
       ! Flake
       if (Model%lkm > 0 .and. Model%iopt_lake==Model%iopt_lake_flake) then
