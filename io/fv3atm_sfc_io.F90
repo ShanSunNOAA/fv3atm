@@ -125,6 +125,7 @@ contains
     else
       nvar2o = 0
     endif
+    nvar2o = nvar2o + 7  ! adding 7 skinsst arrays
     if (Model%lsm == Model%lsm_ruc .and. warm_start) then
       if (Model%rdlai) then
         nvar2r = 13
@@ -499,6 +500,13 @@ contains
       nt=nt+1 ; sfc%name2(nt) = 'dt_cool'
       nt=nt+1 ; sfc%name2(nt) = 'qrain'
     endif
+    nt=nt+1 ; sfc%name2(nt) = 'skinold' ! 7 skinsst arrays
+    nt=nt+1 ; sfc%name2(nt) = 'temwat'
+    nt=nt+1 ; sfc%name2(nt) = 'xtinct'
+    nt=nt+1 ; sfc%name2(nt) = 'flxold'
+    nt=nt+1 ; sfc%name2(nt) = 'dtwarm'
+    nt=nt+1 ; sfc%name2(nt) = 'dtcool'
+    nt=nt+1 ; sfc%name2(nt) = 'zsub'
     !
     ! Only needed when Noah MP LSM is used - 29 2D
     !
@@ -667,6 +675,13 @@ contains
       nt=nt+1 ; sfc%name2(nt) = 'dt_cool'
       nt=nt+1 ; sfc%name2(nt) = 'qrain'
     endif
+    nt=nt+1 ; sfc%name2(nt) = 'skinold' ! 7 skinsst arrays
+    nt=nt+1 ; sfc%name2(nt) = 'temwat'
+    nt=nt+1 ; sfc%name2(nt) = 'xtinct'
+    nt=nt+1 ; sfc%name2(nt) = 'flxold'
+    nt=nt+1 ; sfc%name2(nt) = 'dtwarm'
+    nt=nt+1 ; sfc%name2(nt) = 'dtcool'
+    nt=nt+1 ; sfc%name2(nt) = 'zsub'
     !
     ! Only needed when Noah MP LSM is used - 29 2D
     !
@@ -1252,6 +1267,14 @@ contains
           call GFS_Data_transfer(reading,ii1,jj1,isc,jsc,nt,sfc%var2,Sfcprop%qrain(ixs:ixe)) !--- nsstm qrain
         endif
       endif
+      nt = nt + 7        ! skipping 7 skinsst arrays that are not in ICs
+      Sfcprop%skinold(ixs:ixe) = zero
+      Sfcprop%temwat(ixs:ixe)  = zero
+      Sfcprop%xtinct(ixs:ixe)  = zero
+      Sfcprop%flxold(ixs:ixe)  = zero
+      Sfcprop%dtwarm(ixs:ixe)  = zero
+      Sfcprop%dtcool(ixs:ixe)  = zero
+      Sfcprop%zsub(ixs:ixe)    = zero
 
       if (Model%lsm == Model%lsm_ruc .and. (warm_start .or. .not. reading)) then
         !--- Extra RUC variables
